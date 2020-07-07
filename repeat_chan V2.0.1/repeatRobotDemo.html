@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>复读机测试版v2.0.1</title>
+<link rel="shortcut icon" type="image/x-icon"
+	href="./images/favicon.ico" media="screen" />
+<script src="./javascripts/jquery-3.3.1.min.js"></script>
+<script src="./javascripts/bootstrap.min.js"></script>
+<script src="./javascripts/constant.js"></script>
+	<script src="./javascripts/repeatMode.js"></script>
+<script src="./javascripts/repeat.js"></script>
+<link href="./stylesheets/bootstrap.min.css" rel="stylesheet"
+	type="text/css" />
+<link href="./stylesheets/repeat.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+	<span class="repeat-status">你已复读&nbsp;<span id="repeatTime">0</span>&nbsp;回<span id="bouns" style="color:#efbebe;"></span>
+	</span>
+	<div class="repeat-img-box">
+		<img id="repeat-girl" src="./images/normal.png" />
+	</div>
+	<div class="page-header">
+		<h3>
+			<strong>复☆读☆机</strong>
+		</h3>
+	</div>
+	<div class="chat-box">
+		<div id="message-window"></div>
+		<br>
+		<div>
+			<input class="form-input" type="text" id="nick-name" placeholder="昵称"
+				style="width: 100px; margin-right: 5px;" maxlength="10px" /> <input
+				class="form-input" type="text" id="message-detail"
+				placeholder="消息内容" style="width: 250px;" maxlength="1000px" />
+			<button class="send-button" id="send" onclick="sendMessage();">发送</button>
+		</div>
+	</div>
+
+	<ul class="bg-bubbles">
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+	</ul>
+	<div class="front-bg"></div>
+	<div class="back-bg"></div>
+</body>
+</html>
