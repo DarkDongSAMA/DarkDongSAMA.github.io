@@ -1,0 +1,40 @@
+html{
+    background-color: #000000;
+    background-image: url("../images/3px-tile.png");
+}
+
+body{
+    width: 80%;
+    margin:auto;
+}
+
+header{
+    width: 100%;
+}
+
+.english{
+    font-family: Impact;
+}
+
+.menu{
+    background: #000000;
+}
+
+.menu a{
+    display:inline-block;
+    padding:8px 0px;
+    width:calc(20% - 3.5px);
+    text-align:center;
+    color:#ffffff;
+    position: relative;
+    border-bottom:3px solid #000000;
+}
+
+.menu a:hover{
+    background:#0c4d6d;
+    border-color:#0c4d6d;
+}
+
+.menu a.active{
+    border-bottom:3px solid #08344a;
+}
