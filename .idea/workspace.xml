@@ -21,11 +21,13 @@
   <component name="ProjectId" id="1eMVVpwJhGwqskaVrhcVAawoCqg" />
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/javascripts" />
     <property name="list.type.of.created.stylesheet" value="CSS" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io\javascripts" />
+      <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io\stylesheets" />
       <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io" />
     </key>
   </component>
@@ -54,7 +56,9 @@
       <workItem from="1594131476962" duration="432000" />
       <workItem from="1594300543054" duration="1519000" />
       <workItem from="1594302430205" duration="1617000" />
-      <workItem from="1594304330944" duration="983000" />
+      <workItem from="1594304330944" duration="1372000" />
+      <workItem from="1594385421061" duration="1698000" />
+      <workItem from="1594390388409" duration="1697000" />
     </task>
     <servers />
   </component>
