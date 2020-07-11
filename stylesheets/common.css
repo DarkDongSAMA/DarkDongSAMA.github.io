@@ -4,7 +4,7 @@ a{ cursor: url(../cur2.cur),url(../cur2.cur), pointer; }
 body{
     width: 80%;
     margin:auto;
-    background-color: #000000;
+    background-color: #080719;
     background-image: url("../images/3px-tile.png");
 }
 
@@ -19,9 +19,14 @@ header{
 .title{
     font-size:35px;
     padding:10px 20px;
-    background: #6c747d8f;
+    background-color: #6c747d8f;
+    background-image: url("../images/title.png");
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
+    text-shadow: 0 0 4px #da00ff, 0px -3px 3px #6af1ff, 0px -6px 6px #2bbdff, 0px -9px 8px #229dff, 0px -13px 7px #006bda;
+    color: #ffffff;
+    background-position: right;
+    background-repeat: no-repeat;
 }
 
 .menu{
@@ -36,6 +41,7 @@ header{
     color:#ffffff;
     position: relative;
     border-bottom:3px solid #000000;
+    transition: background-color 0.5s, border-color 0.5s;
 }
 
 .menu a:hover{
@@ -52,10 +58,15 @@ header{
     color:#17a2b8;
 }
 
+.menu a img{
+    margin-right:10px;
+}
+
 #particles-js{
     position: absolute;
     height: 100%;
     width: 100%;
     top:0px;
     left:0px;
+    z-index: -1;
 }

@@ -12,6 +12,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="CSS File" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -20,11 +21,15 @@
   </component>
   <component name="ProjectId" id="1eMVVpwJhGwqskaVrhcVAawoCqg" />
   <component name="PropertiesComponent">
+    <property name="DefaultHtmlFileTemplate" value="HTML File" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/javascripts" />
     <property name="list.type.of.created.stylesheet" value="CSS" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io\stories\dark_philosophy" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io\javascripts" />
       <recent name="C:\Users\Administrator\Documents\GitHub\DarkDongSAMA.github.io\stylesheets" />
@@ -60,6 +65,9 @@
       <workItem from="1594385421061" duration="1698000" />
       <workItem from="1594390388409" duration="1697000" />
       <workItem from="1594456168466" duration="1758000" />
+      <workItem from="1594465530207" duration="1470000" />
+      <workItem from="1594471622826" duration="1697000" />
+      <workItem from="1594473813846" duration="1617000" />
     </task>
     <servers />
   </component>

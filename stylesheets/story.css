@@ -19,8 +19,11 @@
     text-align: center;
 }
 
+.story-table td a{
+    color:#212529;
+}
+
 .story-table td a:hover{
-    font-weight: bolder;
     text-decoration: underline !important;
     text-shadow: 0 0 2px #dadada;
 }
