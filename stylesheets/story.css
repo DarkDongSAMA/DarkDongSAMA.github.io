@@ -7,3 +7,24 @@
     margin:20px 0px;
     padding:15px 20px;
 }
+
+.story-table{
+    border-width: 3px;
+    width: 100%;
+    margin:8px 0px;
+}
+
+.story-table td{
+    padding:8px 10px;
+    text-align: center;
+}
+
+.story-table td a:hover{
+    font-weight: bolder;
+    text-decoration: underline !important;
+    text-shadow: 0 0 2px #dadada;
+}
+
+.table-title{
+    font-weight: bolder;
+}
