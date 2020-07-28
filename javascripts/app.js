@@ -13,7 +13,7 @@ particlesJS('particles-js',
       "value": "#ffffff" //原子的颜色
     },
     "shape": {
-      "type": "edge", //原子的形状 "circle" ,"edge" ,"triangle" ,"polygon" ,"star" ,"image" ,["circle", "triangle", "image"]
+      "type": "circle", //原子的形状 "circle" ,"edge" ,"triangle" ,"polygon" ,"star" ,"image" ,["circle", "triangle", "image"]
       "stroke": {
         "width": 0, //原子的宽度
         "color": "#d5d5d5" //原子颜色
