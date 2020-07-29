@@ -6,6 +6,7 @@ body{
     margin:auto;
     background-color: #080719;
     background-image: url("../images/3px-tile.png");
+    background-size: 100%;
 }
 
 header{
