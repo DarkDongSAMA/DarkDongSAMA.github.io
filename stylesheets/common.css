@@ -5,8 +5,8 @@ body{
     width: 80%;
     margin:auto;
     background-color: #080719;
-    background-image: url("../images/3px-tile.png");
-    background-size: 100%;
+    /* background-image: url("../images/bg-active.mp4");
+    background-size: 100%; */
 }
 
 header{
@@ -64,8 +64,8 @@ header{
 }
 
 #particles-js{
-    position: absolute;
-    height: 100%;
+    position: fixed;
+    /* height: 100%; */
     width: 100%;
     top:0px;
     left:0px;
