@@ -1,12 +1,12 @@
 *{ cursor: url(../cur1.cur),url(../cur1.cur), default; }
-a{ cursor: url(../cur2.cur),url(../cur2.cur), pointer; }
+a, button{ cursor: url(../cur2.cur),url(../cur2.cur), pointer; }
 
 body{
     width: 80%;
     margin:auto;
     background-color: #080719;
-    /* background-image: url("../images/bg-active.mp4");
-    background-size: 100%; */
+    background-image: url("../images/bg.png");
+    background-size: 100%;
 }
 
 header{
@@ -65,7 +65,7 @@ header{
 
 #particles-js{
     position: fixed;
-    /* height: 100%; */
+    height: 100%;
     width: 100%;
     top:0px;
     left:0px;

@@ -1,0 +1,141 @@
+html, body{
+    height: 100%;
+    width: 100%;
+    background-image: none;
+}
+
+.left-menu{
+    background-color: #29522f7a;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    height: 100%;
+    width: 20%;
+    position: relative;
+    border-right: 3px groove #ffffff;
+}
+
+video{
+    position: fixed;
+    /* height: 100%; */
+    width: 100%;
+    top:0px;
+    left:0px;
+    z-index: -1;
+}
+
+.menu-box{
+    width: 100%;
+    position: absolute;
+    padding-left:20%;
+    height: 100%;
+}
+
+.menu-bar{
+    width: 100%;
+    background: linear-gradient(90deg, #ff90a3 75%, transparent);
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    position: absolute;
+    cursor: url(../cur2.cur),url(../cur2.cur), pointer;
+    box-shadow: inset 0 0 11px white;
+}
+
+.menu-bar:not(.active):hover{
+    background: linear-gradient(90deg, #ff90a3 75%, #ff90a3);
+}
+
+.menu-bar:not(.active) img{
+    opacity: 0;
+    transition: all 0.1s;
+}
+
+.menu-bar:not(.active):hover img{
+    opacity: 100;
+}
+
+.menu-box div.active{
+    background:#E91E63;
+    cursor: url(../cur1.cur),url(../cur1.cur), default;
+}
+
+.menu-bar:nth-child(5){
+    bottom:5%;
+    margin-left: 40px;
+    transition: all 0.5s;
+}
+
+.menu-bar:nth-child(5):hover{
+    margin-left: 75px;
+}
+
+.menu-bar:nth-child(4){
+    bottom:15%;
+    margin-left: 30px;
+    transition: all 0.5s;
+}
+
+.menu-bar:nth-child(4):hover{
+    margin-left: 55px;
+}
+
+.menu-bar:nth-child(3){
+    bottom:25%;
+    margin-left: 20px;
+    transition: all 0.5s;
+}
+
+.menu-bar:nth-child(3):hover{
+    margin-left: 45px;
+}
+
+.menu-bar:nth-child(2){
+    bottom:35%;
+    margin-left: 10px;
+    transition: all 0.5s;
+}
+
+.menu-bar:nth-child(2):hover{
+    margin-left: 25px;
+}
+
+.menu-bar:nth-child(1){
+    bottom:45%;
+    transition: all 0.1s;
+}
+
+.menu-box a{
+    font-size: 2vw;
+    font-weight: lighter;
+    color:#ffffff;
+    text-decoration: none;
+    font-family: -webkit-body;
+    margin-left: 10px;
+    vertical-align: middle;
+    transition: all 0.4s;
+}
+
+.menu-box div.active a{
+    cursor: url(../cur1.cur),url(../cur1.cur), default;
+    color: #ffffff !important;
+    text-shadow: 4px 4px 8px #0e6fa9;
+}
+
+.menu-box div:not(.active):hover a{
+    margin-left: 20px;
+    text-shadow: 0px 0px 8px #00a0ff;
+}
+
+.index-title{
+    position: absolute;
+    top:0px;
+    left:0px;
+    width: fit-content;
+    height: fit-content;
+    font-size:45px;
+    padding:10px 20px;
+    text-shadow: 0 0 4px #da00ff, 0px -3px 3px #6af1ff, 0px -6px 6px #2bbdff, 0px -9px 8px #229dff, 0px -13px 7px #006bda;
+    color: #ffffff;
+    background-position: right;
+    background-repeat: no-repeat;
+    z-index: 10;
+}
