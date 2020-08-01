@@ -5,13 +5,24 @@ html, body{
 }
 
 .left-menu{
-    background-color: #29522f7a;
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
     height: 100%;
     width: 20%;
     position: relative;
-    border-right: 3px groove #ffffff;
+    z-index: 10;
+}
+
+.menu-bg{
+    background-color: #7263947a;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    height: 100%;
+    width: 25%;
+    position: absolute;
+    left: -5%;
+    top: 0;
+    /* border-right: 3px groove #ffffff; */
+    z-index: 0;
+    transform: skewX(8deg);
 }
 
 video{
@@ -38,6 +49,7 @@ video{
     position: absolute;
     cursor: url(../cur2.cur),url(../cur2.cur), pointer;
     box-shadow: inset 0 0 11px white;
+    text-decoration: none !important;
 }
 
 .menu-bar:not(.active):hover{
@@ -53,7 +65,7 @@ video{
     opacity: 100;
 }
 
-.menu-box div.active{
+.menu-box a.active{
     background:#E91E63;
     cursor: url(../cur1.cur),url(../cur1.cur), default;
 }
@@ -65,7 +77,7 @@ video{
 }
 
 .menu-bar:nth-child(5):hover{
-    margin-left: 75px;
+    margin-left: 55px;
 }
 
 .menu-bar:nth-child(4){
@@ -75,7 +87,7 @@ video{
 }
 
 .menu-bar:nth-child(4):hover{
-    margin-left: 55px;
+    margin-left: 45px;
 }
 
 .menu-bar:nth-child(3){
@@ -85,7 +97,7 @@ video{
 }
 
 .menu-bar:nth-child(3):hover{
-    margin-left: 45px;
+    margin-left: 35px;
 }
 
 .menu-bar:nth-child(2){
@@ -103,36 +115,35 @@ video{
     transition: all 0.1s;
 }
 
-.menu-box a{
+.menu-box span{
     font-size: 2vw;
     font-weight: lighter;
     color:#ffffff;
-    text-decoration: none;
     font-family: -webkit-body;
     margin-left: 10px;
     vertical-align: middle;
     transition: all 0.4s;
 }
 
-.menu-box div.active a{
+.menu-box a.active span{
     cursor: url(../cur1.cur),url(../cur1.cur), default;
     color: #ffffff !important;
     text-shadow: 4px 4px 8px #0e6fa9;
 }
 
-.menu-box div:not(.active):hover a{
+.menu-box a:not(.active):hover span{
     margin-left: 20px;
     text-shadow: 0px 0px 8px #00a0ff;
 }
 
 .index-title{
     position: absolute;
-    top:0px;
-    left:0px;
+    top: 20px;
+    left: 4%;
     width: fit-content;
     height: fit-content;
-    font-size:45px;
-    padding:10px 20px;
+    font-size: 5vw;
+    padding: 10px 20px;
     text-shadow: 0 0 4px #da00ff, 0px -3px 3px #6af1ff, 0px -6px 6px #2bbdff, 0px -9px 8px #229dff, 0px -13px 7px #006bda;
     color: #ffffff;
     background-position: right;
