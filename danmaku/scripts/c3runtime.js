@@ -4221,8 +4221,15 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Sprite.Cnds.OnCreated,
 		C3.Behaviors.MoveTo.Acts.MoveToObject,
 		C3.Behaviors.Bullet.Acts.SetAngleOfMotion,
+		C3.Behaviors.MoveTo.Acts.MoveToPosition,
+		C3.Plugins.System.Exps.viewportwidth,
 		C3.Behaviors.EightDir.Acts.SetMaxSpeed,
-		C3.Plugins.Keyboard.Cnds.OnKeyReleased
+		C3.Plugins.Keyboard.Cnds.OnKeyReleased,
+		C3.Plugins.Sprite.Cnds.CompareY,
+		C3.Plugins.System.Cnds.EveryTick,
+		C3.Plugins.Sprite.Acts.SetVisible,
+		C3.Plugins.System.Cnds.Else,
+		C3.Behaviors.Bullet.Acts.SetEnabled
 	];
 };
 self.C3_JsPropNameTable = [
@@ -4244,10 +4251,16 @@ self.C3_JsPropNameTable = [
 	{Sprite7: 0},
 	{Text: 0},
 	{Sprite8: 0},
+	{Sprite9: 0},
+	{Sprite10: 0},
+	{Text2: 0},
+	{Sprite11: 0},
 	{red_max_hp: 0},
 	{bullet_count: 0},
+	{purple: 0},
 	{red_bullet: 0},
 	{cold_time: 0},
+	{blue_two: 0},
 	{red_hp: 0}
 ];
 }
@@ -4370,14 +4383,25 @@ self.C3_ExpressionFuncs = [
 		() => 10,
 		() => 0.8,
 		() => 400,
-		() => 0.05,
 		p => {
 			const v0 = p._GetNode(0).GetVar();
 			return () => (v0.GetValue() * 36);
 		},
-		() => 360,
 		() => 300,
-		() => 500
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			return () => (f0(0) - 300);
+		},
+		() => 500,
+		() => 30,
+		p => {
+			const v0 = p._GetNode(0).GetVar();
+			return () => v0.GetValue();
+		},
+		p => {
+			const v0 = p._GetNode(0).GetVar();
+			return () => (v0.GetValue() * 12);
+		}
 ];
 
 
