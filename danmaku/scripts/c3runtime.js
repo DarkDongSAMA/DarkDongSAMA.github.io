@@ -4219,7 +4219,6 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.System.Acts.RestartLayout,
 		C3.Plugins.System.Acts.ResetGlobals,
 		C3.Plugins.Sprite.Cnds.OnCreated,
-		C3.Plugins.Sprite.Acts.SetOpacity,
 		C3.Behaviors.MoveTo.Acts.MoveToObject,
 		C3.Behaviors.Bullet.Acts.SetAngleOfMotion,
 		C3.Behaviors.EightDir.Acts.SetMaxSpeed,
@@ -4370,8 +4369,6 @@ self.C3_ExpressionFuncs = [
 		() => 0.5,
 		() => 10,
 		() => 0.8,
-		() => 30,
-		() => 20,
 		() => 400,
 		() => 0.05,
 		p => {
