@@ -4197,16 +4197,16 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Keyboard.Cnds.IsKeyDown,
 		C3.Plugins.System.Cnds.Every,
 		C3.Plugins.Sprite.Acts.Spawn,
-		C3.Plugins.Sprite.Cnds.OnCollision,
-		C3.Behaviors.EightDir.Acts.Stop,
-		C3.Behaviors.Fade.Acts.StartFade,
-		C3.Behaviors.Fade.Acts.SetFadeOutTime,
+		C3.Plugins.Keyboard.Cnds.OnKey,
 		C3.Plugins.System.Cnds.CompareVar,
-		C3.Plugins.Sprite.Acts.Destroy,
 		C3.Plugins.System.Acts.SubVar,
+		C3.Plugins.Sprite.Acts.Destroy,
+		C3.Plugins.Sprite.Cnds.OnCollision,
 		C3.Plugins.Sprite.Acts.SetWidth,
 		C3.Plugins.Sprite.Exps.Width,
 		C3.Plugins.Text.Acts.SetText,
+		C3.Behaviors.EightDir.Acts.Stop,
+		C3.Behaviors.Fade.Acts.StartFade,
 		C3.Plugins.System.Cnds.CompareBoolVar,
 		C3.Plugins.System.Acts.AddVar,
 		C3.Behaviors.Turret.Acts.AcquireTarget,
@@ -4253,14 +4253,16 @@ self.C3_JsPropNameTable = [
 	{Sprite8: 0},
 	{Sprite9: 0},
 	{Sprite10: 0},
-	{Text2: 0},
 	{Sprite11: 0},
+	{Sprite12: 0},
+	{Text2: 0},
 	{red_max_hp: 0},
 	{bullet_count: 0},
 	{purple: 0},
 	{red_bullet: 0},
 	{cold_time: 0},
 	{blue_two: 0},
+	{boom: 0},
 	{red_hp: 0}
 ];
 }
@@ -4379,6 +4381,10 @@ self.C3_ExpressionFuncs = [
 			const v1 = p._GetNode(1).GetVar();
 			return () => and(and(v0.GetValue(), "/"), v1.GetValue());
 		},
+		p => {
+			const v0 = p._GetNode(0).GetVar();
+			return () => and("Boom：", v0.GetValue());
+		},
 		() => 0.5,
 		() => 10,
 		() => 0.8,
@@ -4394,10 +4400,6 @@ self.C3_ExpressionFuncs = [
 		},
 		() => 500,
 		() => 30,
-		p => {
-			const v0 = p._GetNode(0).GetVar();
-			return () => v0.GetValue();
-		},
 		p => {
 			const v0 = p._GetNode(0).GetVar();
 			return () => (v0.GetValue() * 12);
