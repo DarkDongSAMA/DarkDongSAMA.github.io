@@ -4242,14 +4242,13 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Sprite.Acts.SetWidth,
 		C3.Plugins.Sprite.Exps.Width,
 		C3.Plugins.Text.Acts.SetText,
-		C3.Behaviors.EightDir.Acts.Stop,
-		C3.Behaviors.Fade.Acts.StartFade,
 		C3.Plugins.System.Cnds.CompareBoolVar,
 		C3.Plugins.System.Acts.AddVar,
 		C3.Behaviors.Turret.Acts.AcquireTarget,
 		C3.Plugins.System.Acts.ToggleBoolVar,
 		C3.Plugins.System.Acts.Wait,
 		C3.Plugins.System.Acts.SetVar,
+		C3.Behaviors.Fade.Acts.StartFade,
 		C3.Plugins.Sprite.Cnds.OnDestroyed,
 		C3.Plugins.Button.Acts.SetVisible,
 		C3.Plugins.Button.Cnds.OnClicked,
@@ -4257,6 +4256,7 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.System.Acts.ResetGlobals,
 		C3.Plugins.Sprite.Cnds.OnCreated,
 		C3.Behaviors.MoveTo.Acts.MoveToObject,
+		C3.Plugins.Sprite.Acts.SetAngle,
 		C3.Behaviors.Bullet.Acts.SetAngleOfMotion,
 		C3.Behaviors.MoveTo.Acts.MoveToPosition,
 		C3.Plugins.System.Exps.viewportwidth,
@@ -4266,7 +4266,6 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Keyboard.Cnds.OnKeyReleased,
 		C3.Plugins.Sprite.Cnds.CompareY,
 		C3.Plugins.System.Cnds.EveryTick,
-		C3.Plugins.Sprite.Acts.SetVisible,
 		C3.Plugins.System.Cnds.Else,
 		C3.Behaviors.Bullet.Acts.SetEnabled
 	];
@@ -4430,6 +4429,7 @@ self.C3_ExpressionFuncs = [
 		() => 10,
 		() => 0.8,
 		() => 400,
+		() => 0.08,
 		p => {
 			const v0 = p._GetNode(0).GetVar();
 			return () => (v0.GetValue() * 36);
