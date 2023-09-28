@@ -4242,13 +4242,14 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Sprite.Acts.SetWidth,
 		C3.Plugins.Sprite.Exps.Width,
 		C3.Plugins.Text.Acts.SetText,
+		C3.Behaviors.EightDir.Acts.Stop,
+		C3.Behaviors.Fade.Acts.StartFade,
 		C3.Plugins.System.Cnds.CompareBoolVar,
 		C3.Plugins.System.Acts.AddVar,
 		C3.Behaviors.Turret.Acts.AcquireTarget,
 		C3.Plugins.System.Acts.ToggleBoolVar,
 		C3.Plugins.System.Acts.Wait,
 		C3.Plugins.System.Acts.SetVar,
-		C3.Behaviors.Fade.Acts.StartFade,
 		C3.Plugins.Sprite.Cnds.OnDestroyed,
 		C3.Plugins.Button.Acts.SetVisible,
 		C3.Plugins.Button.Cnds.OnClicked,
@@ -4267,7 +4268,9 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Sprite.Cnds.CompareY,
 		C3.Plugins.System.Cnds.EveryTick,
 		C3.Plugins.System.Cnds.Else,
-		C3.Behaviors.Bullet.Acts.SetEnabled
+		C3.Behaviors.Bullet.Acts.SetEnabled,
+		C3.Plugins.System.Exps.random,
+		C3.Behaviors.MoveTo.Cnds.IsMoving
 	];
 };
 self.C3_JsPropNameTable = [
@@ -4280,8 +4283,8 @@ self.C3_JsPropNameTable = [
 	{Sprite2: 0},
 	{Keyboard: 0},
 	{炮台: 0},
-	{Sprite3: 0},
 	{移动到: 0},
+	{Sprite3: 0},
 	{Sprite5: 0},
 	{Sprite4: 0},
 	{Sprite6: 0},
@@ -4292,9 +4295,7 @@ self.C3_JsPropNameTable = [
 	{Sprite9: 0},
 	{Sprite10: 0},
 	{Sprite11: 0},
-	{Sprite12: 0},
 	{Text2: 0},
-	{Sprite13: 0},
 	{平铺背景: 0},
 	{red_max_hp: 0},
 	{bullet_count: 0},
@@ -4445,6 +4446,19 @@ self.C3_ExpressionFuncs = [
 		p => {
 			const v0 = p._GetNode(0).GetVar();
 			return () => (v0.GetValue() * 12);
+		},
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			return () => f0(3, 5);
+		},
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			const f1 = p._GetNode(1).GetBoundMethod();
+			return () => f0(200, (f1(0) - 200));
+		},
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			return () => f0(120, 180);
 		}
 ];
 
