@@ -4216,6 +4216,17 @@ C3.Behaviors.MoveTo.Acts.MoveAlongTimeline.call(this,timeline,trackId,mode)},Sto
 }
 
 {
+'use strict';{const C3=self.C3;C3.Behaviors.Rotate=class RotateBehavior extends C3.SDKBehaviorBase{constructor(opts){super(opts)}Release(){super.Release()}}}{const C3=self.C3;C3.Behaviors.Rotate.Type=class RotateType extends C3.SDKBehaviorTypeBase{constructor(objectClass){super(objectClass)}Release(){super.Release()}OnCreate(){}}}
+{const C3=self.C3;const C3X=self.C3X;const IBehaviorInstance=self.IBehaviorInstance;const SPEED=0;const ACCELERATION=1;const ENABLE=2;C3.Behaviors.Rotate.Instance=class RotateInstance extends C3.SDKBehaviorInstanceBase{constructor(inst,properties){super(inst);this._speed=0;this._acceleration=0;this._isEnabled=true;if(properties){this._speed=C3.toRadians(properties[SPEED]);this._acceleration=C3.toRadians(properties[ACCELERATION]);this._isEnabled=properties[ENABLE]}if(this._isEnabled)this._StartTicking()}Release(){super.Release()}_SetSpeed(s){this._speed=
+s}_GetSpeed(){return this._speed}_SetAcceleration(a){this._acceleration=a}_GetAcceleration(){return this._acceleration}SaveToJson(){return{"s":this._speed,"a":this._acceleration,"e":this._isEnabled}}LoadFromJson(o){this._speed=o["s"];this._acceleration=o["a"];this._SetEnabled(o["e"])}Tick(){if(!this._isEnabled)return;const dt=this._runtime.GetDt(this._inst);if(dt===0)return;if(this._acceleration!==0)this._speed+=this._acceleration*dt;if(this._speed!==0){const wi=this._inst.GetWorldInfo();wi.SetAngle(wi.GetAngle()+
+this._speed*dt);wi.SetBboxChanged()}}GetPropertyValueByIndex(index){switch(index){case SPEED:return C3.toDegrees(this._GetSpeed());case ACCELERATION:return C3.toDegrees(this._GetAcceleration());case ENABLE:return this._IsEnabled()}}SetPropertyValueByIndex(index,value){switch(index){case SPEED:this._SetSpeed(C3.toRadians(value));break;case ACCELERATION:this._SetAcceleration(C3.toRadians(value));break;case ENABLE:this._SetEnabled(value);break}}_SetEnabled(e){this._isEnabled=!!e;if(this._isEnabled)this._StartTicking();
+else this._StopTicking()}_IsEnabled(){return this._isEnabled}GetDebuggerProperties(){const prefix="behaviors.rotate";return[{title:"$"+this.GetBehaviorType().GetName(),properties:[{name:prefix+".properties.speed.name",value:C3.toDegrees(this._GetSpeed()),onedit:v=>this._SetSpeed(C3.toRadians(v))},{name:prefix+".properties.acceleration.name",value:C3.toDegrees(this._GetAcceleration()),onedit:v=>this._SetAcceleration(C3.toRadians(v))},{name:prefix+".properties.enabled.name",value:this._IsEnabled(),
+onedit:v=>this._SetEnabled(v)}]}]}GetScriptInterfaceClass(){return self.IRotateBehaviorInstance}};const map=new WeakMap;self.IRotateBehaviorInstance=class IRotateBehaviorInstance extends IBehaviorInstance{constructor(){super();map.set(this,IBehaviorInstance._GetInitInst().GetSdkInstance())}set speed(s){C3X.RequireFiniteNumber(s);map.get(this)._SetSpeed(s)}get speed(){return map.get(this)._GetSpeed()}set acceleration(a){C3X.RequireFiniteNumber(a);map.get(this)._SetAcceleration(a)}get acceleration(){return map.get(this)._GetAcceleration()}get isEnabled(){return map.get(this)._IsEnabled()}set isEnabled(e){map.get(this)._SetEnabled(e)}}}
+{const C3=self.C3;C3.Behaviors.Rotate.Cnds={IsEnabled(){return this._IsEnabled()}}}{const C3=self.C3;C3.Behaviors.Rotate.Acts={SetSpeed(s){this._SetSpeed(C3.toRadians(s))},SetAcceleration(a){this._SetAcceleration(C3.toRadians(a))},SetEnabled(e){this._SetEnabled(e)}}}{const C3=self.C3;C3.Behaviors.Rotate.Exps={Speed(){return C3.toDegrees(this._GetSpeed())},Acceleration(){return C3.toDegrees(this._GetAcceleration())}}};
+
+}
+
+{
 const C3 = self.C3;
 self.C3_GetObjectRefTable = function () {
 	return [
@@ -4231,6 +4242,7 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Button,
 		C3.Plugins.Text,
 		C3.Plugins.TiledBg,
+		C3.Behaviors.Rotate,
 		C3.Plugins.Keyboard.Cnds.IsKeyDown,
 		C3.Plugins.System.Cnds.Every,
 		C3.Plugins.Sprite.Acts.Spawn,
@@ -4244,12 +4256,6 @@ self.C3_GetObjectRefTable = function () {
 		C3.Plugins.Text.Acts.SetText,
 		C3.Behaviors.EightDir.Acts.Stop,
 		C3.Behaviors.Fade.Acts.StartFade,
-		C3.Plugins.System.Cnds.CompareBoolVar,
-		C3.Plugins.System.Acts.AddVar,
-		C3.Behaviors.Turret.Acts.AcquireTarget,
-		C3.Plugins.System.Acts.ToggleBoolVar,
-		C3.Plugins.System.Acts.Wait,
-		C3.Plugins.System.Acts.SetVar,
 		C3.Plugins.Sprite.Cnds.OnDestroyed,
 		C3.Plugins.Button.Acts.SetVisible,
 		C3.Plugins.Button.Cnds.OnClicked,
@@ -4259,18 +4265,22 @@ self.C3_GetObjectRefTable = function () {
 		C3.Behaviors.MoveTo.Acts.MoveToObject,
 		C3.Plugins.Sprite.Acts.SetAngle,
 		C3.Behaviors.Bullet.Acts.SetAngleOfMotion,
+		C3.Plugins.System.Acts.AddVar,
+		C3.Plugins.System.Acts.SetVar,
+		C3.Plugins.System.Cnds.CompareBoolVar,
 		C3.Behaviors.MoveTo.Acts.MoveToPosition,
 		C3.Plugins.System.Exps.viewportwidth,
+		C3.Plugins.System.Acts.ToggleBoolVar,
 		C3.Behaviors.EightDir.Acts.SetMaxSpeed,
 		C3.Behaviors.EightDir.Acts.SetAcceleration,
 		C3.Behaviors.EightDir.Acts.SetDeceleration,
 		C3.Plugins.Keyboard.Cnds.OnKeyReleased,
 		C3.Plugins.Sprite.Cnds.CompareY,
-		C3.Plugins.System.Cnds.EveryTick,
-		C3.Plugins.System.Cnds.Else,
-		C3.Behaviors.Bullet.Acts.SetEnabled,
+		C3.Plugins.System.Cnds.For,
+		C3.Plugins.System.Exps.loopindex,
 		C3.Plugins.System.Exps.random,
-		C3.Behaviors.MoveTo.Cnds.IsMoving
+		C3.Behaviors.MoveTo.Cnds.IsMoving,
+		C3.Plugins.System.Acts.CreateObject
 	];
 };
 self.C3_JsPropNameTable = [
@@ -4285,6 +4295,7 @@ self.C3_JsPropNameTable = [
 	{炮台: 0},
 	{移动到: 0},
 	{Sprite3: 0},
+	{state: 0},
 	{Sprite5: 0},
 	{Sprite4: 0},
 	{Sprite6: 0},
@@ -4297,9 +4308,9 @@ self.C3_JsPropNameTable = [
 	{Sprite11: 0},
 	{Text2: 0},
 	{平铺背景: 0},
+	{旋转: 0},
+	{Sprite12: 0},
 	{red_max_hp: 0},
-	{bullet_count: 0},
-	{purple: 0},
 	{red_bullet: 0},
 	{cold_time: 0},
 	{blue_two: 0},
@@ -4405,10 +4416,10 @@ function or(l, r)
 }
 
 self.C3_ExpressionFuncs = [
-		() => 0.1,
+		() => 0.08,
 		() => 0,
 		() => 1,
-		() => 0.3,
+		() => 0.2,
 		() => 2,
 		() => 3,
 		p => {
@@ -4427,14 +4438,12 @@ self.C3_ExpressionFuncs = [
 			return () => and("Boom：", v0.GetValue());
 		},
 		() => 0.5,
-		() => 10,
-		() => 0.8,
 		() => 400,
-		() => 0.08,
 		p => {
 			const v0 = p._GetNode(0).GetVar();
 			return () => (v0.GetValue() * 36);
 		},
+		() => 10,
 		() => 300,
 		p => {
 			const f0 = p._GetNode(0).GetBoundMethod();
@@ -4442,10 +4451,12 @@ self.C3_ExpressionFuncs = [
 		},
 		() => 500,
 		() => 800,
-		() => 30,
+		() => 0.8,
+		() => "purple",
+		() => 60,
 		p => {
-			const v0 = p._GetNode(0).GetVar();
-			return () => (v0.GetValue() * 12);
+			const f0 = p._GetNode(0).GetBoundMethod();
+			return () => (f0() * (360 / 60));
 		},
 		p => {
 			const f0 = p._GetNode(0).GetBoundMethod();
@@ -4459,7 +4470,20 @@ self.C3_ExpressionFuncs = [
 		p => {
 			const f0 = p._GetNode(0).GetBoundMethod();
 			return () => f0(120, 180);
-		}
+		},
+		() => "circle",
+		() => 80,
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			return () => ((f0() + 1) * (360 / 81));
+		},
+		() => 200,
+		p => {
+			const f0 = p._GetNode(0).GetBoundMethod();
+			const f1 = p._GetNode(1).GetBoundMethod();
+			return () => f0(30, (f1(0) - 30));
+		},
+		() => ""
 ];
 
 
