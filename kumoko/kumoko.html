@@ -13,29 +13,80 @@
     <strong>We're sorry but kumoko doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
   </noscript>
   <div id="app">
-    <div>名字：<span v-if="!isEdit">{{user.name}}</span><input v-else v-model="user.name" /><button @click="editName">{{isEdit?'保存':'修改'}}</button></div>
-    <div>云币：{{user.money}}</div>
-    <div>打工点数：{{user.baitoPoint}}</div>
-    <div>道具：{{user.items.length == 0?'无':user.items.join(",")}}</div>
-    <div>自动存档：{{user.autoSave?"已开启":"未开启"}}<button @click="editAutoSave">{{user.autoSave?'关闭':'开启'}}</button></div>
-    <button @click="saveGame">存档</button><button @click="outputSave">导出存档</button><button @click="inputSave">导入存档</button>
-    <div>
-      <div>菜单</div>
-      <div><button @click="changeModel(index)" v-for="(item, index) in menu" :disabled="!(user.lockMenu.indexOf(index) > -1 || (user.lockMenu.indexOf(index) == -1 && user.money >= item.lock))"><span>{{user.lockMenu.indexOf(index) == -1 && user.money >= item.lock?'解锁':''}}</span>{{item.name}}</button></div>
-    </div>
-    <div>{{menu[pageNum].name}}</div>
-    <div v-if="pageNum == 0">
-      <button @click="startBaito(index)" v-for="(item, index) in baitoMenu" :disabled="!(user.lockBaito.indexOf(index) > -1 || (user.lockBaito.indexOf(index) == -1 && user.baitoPoint >= item.lock))">{{item.name}}</button>
-    </div>
-    <div v-else-if="pageNum == 1">
-      <div v-for="(item, index) in shop">
-        <div>{{item.name}}：</div>
-        <div v-for="(item1, index1) in item.list">
-          <div>{{item1.name}}-{{item1.money}}元/1<button @click="shopBuy(index1)">购买</button></div>
+    <div v-if="!isMine">
+      <div>
+        名字：<span v-if="!isEdit">{{ user.name }}</span><input v-else v-model="user.name" /><button @click="editName">
+          {{ isEdit ? "保存" : "修改" }}
+        </button>
+      </div>
+      <div>云币：{{ user.money }}枚</div>
+      <div>打工点数：{{ user.baitoPoint }}点</div>
+      <div>道具：
+        <span v-for="(item, index) in user.items" :key="index">
+          {{item.name}}x{{item.num}}|
+        </span>
+        <span v-if="user.items.length == 0">无</span>
+      </div>
+      <div>
+        自动存档：{{ user.autoSave ? "已开启" : "未开启"
+        }}<button @click="editAutoSave">{{ user.autoSave ? "关闭" : "开启" }}</button>
+      </div>
+      <button @click="saveGame">存档</button><button @click="outputSave">导出存档</button><button @click="inputSave">导入存档</button>
+      <div>
+        <div>菜单</div>
+        <div>
+          <button @click="changeModel(index)" v-for="(item, index) in menu" :key="index" :disabled="
+          !(
+            user.lockMenu.indexOf(item.id) > -1 ||
+            (user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock)
+          )
+        ">
+            <span>{{
+              user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock ? "解锁" : ""
+              }}</span>{{ item.name }}
+          </button>
         </div>
       </div>
+      <div>{{ menu[pageNum].name }}</div>
+      <div v-if="menu[pageNum].id == 0">
+        <button @click="startBaito(index)" v-for="(item, index) in baitoMenu" :key="index" :disabled="
+        !(
+          user.lockBaito.indexOf(item.id) > -1 ||
+          (user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock)
+        )
+      ">
+          <span>{{
+            user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock
+            ? "解锁"
+            : ""
+            }}</span>{{ item.name }}
+        </button>
+      </div>
+      <div v-else-if="menu[pageNum].id == 1">
+        <div v-for="(item, index) in shop" :key="index">
+          <div>{{ item.name }}：</div>
+          <div v-for="(item1, index1) in item.list" :key="'shop-'+index1">
+            <div v-for="(items, itemI) in itemList[index]" :key="'items-'+itemI">
+              <div v-if="item1 == items.id">
+                {{ items.name }}-{{ items.money }}元<button @click="shopBuy(index,items)" :disabled="user.money < items.money">
+                  购买
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-if="item.list.length == 0">暂无</div>
+        </div>
+      </div>
+      <div v-else-if="menu[pageNum].id == 3">
+        <button @click="startMine">开始挖矿</button>
+      </div>
     </div>
-    <div v-else>锐意制作中！</div>
+    <div v-else><button @click="endMine">返回</button>
+      <div>矿洞{{floor}}层</div>
+      <div style="display: flex;flex-wrap: wrap;">
+        <div style="height: 30px;width: 30px;border: 1px solid;margin: 1px;font-size: 12px;text-align: center;line-height: 30px;" v-for="(item, index) in mineList" :key="index">{{item.name}}</div>
+      </div>
+    </div>
   </div>
   <script>
     new Vue({
@@ -52,52 +103,125 @@
         },
         pageNum: 0,
         isEdit: false,
-        menu: [{ name: '打工', lock: 0 },
-        { name: '商店', lock: 0 },
-        { name: '种地', lock: 50 },
-        { name: '挖矿', lock: 100 },
-        { name: '合成', lock: 200 },
-        { name: '冒险', lock: 200 }],
+        menu: [{ id: 0, name: '打工', lock: 0 },
+        { id: 1, name: '商店', lock: 0 },
+        { id: 2, name: '种地', lock: 50 },
+        { id: 3, name: '挖矿', lock: 100 },
+        { id: 4, name: '合成', lock: 200 },
+        { id: 5, name: '冒险', lock: 200 }],
         // 打工相关
-        baitoMenu: [{ name: '整理', money: 10, lock: 0, time: 5, point: 1 },
-        { name: '跑腿', money: 30, lock: 10, time: 10, point: 2 },
-        { name: '出售', money: 80, lock: 20, time: 20, point: 5 },
-        { name: '社长', money: 100, lock: 50, time: 30, point: 10 }],
+        baitoMenu: [{ id: 0, name: '整理', money: 10, lock: 0, time: 5, point: 1 },
+        { id: 1, name: '跑腿', money: 30, lock: 10, time: 10, point: 2 },
+        { id: 2, name: '售卖', money: 80, lock: 20, time: 20, point: 5 },
+        { id: 3, name: '社长', money: 100, lock: 50, time: 30, point: 10 }],
         // 商店相关
         shop: [{ name: "道具", list: [] },
-        { name: "种子", list: [{ name: "bt种子", money: 10 }] }]
+        { name: "农场", list: [0] }],
+        // 道具相关
+        itemList: [
+          // 日常
+          [],
+          // 农场
+          [{ id: 0, name: "bt种子", money: 2 },
+          { id: 1, name: "bt资源", money: 10 }],
+          // 挖矿
+          [{ id: 0, name: "石头", rare: 1 },
+          { id: 1, name: "煤块", rare: 2 },
+          { id: 2, name: "铜块", rare: 3 },
+          { id: 3, name: "金块", rare: 4 },
+          { id: 4, name: "云可的胖次", rare: 5 }]
+        ],
+        // 挖矿相关
+        isMine: false,
+        mineList: [],
+        floor: 1
       },
       methods: {
         // 打工
         startBaito(index) {
           let user = this.user
           let item = this.baitoMenu[index]
-          if (user.lockBaito.indexOf(index) > -1) {
-            this.user.money = this.user.money + this.baitoMenu[index].money
-            this.user.baitoPoint = user.baitoPoint + item.point
-          } else if (user.lockBaito.indexOf(index) == -1 && user.baitoPoint >= item.lock) {
-            this.user.baitoPoint = user.baitoPoint - item.lock
-            this.user.lockBaito.push(index)
+          if (user.lockBaito.indexOf(item.id) > -1) {
+            user.money = user.money + item.money
+            user.baitoPoint = user.baitoPoint + item.point
+          } else if (user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock) {
+            user.baitoPoint = user.baitoPoint - item.lock
+            user.lockBaito.push(item.id)
             alert("已解锁 " + item.name)
-            this.user.money = this.user.money + this.baitoMenu[index].money
+            user.money = user.money + item.money
           }
           if (this.user.autoSave) {
             this.saveGame()
           }
         },
         // 商店
-        shopBuy(index) {
-          alert("锐意制作中！")
+        shopBuy(index, item) {
+          let list = this.itemList[index]
+          this.updateItems(item);
+          this.user.money = this.user.money - item.money
+          if (this.user.autoSave) {
+            this.saveGame()
+          }
+        },
+        // 挖矿
+        startMine() {
+          let mine = this.itemList[2]
+          let list = []
+          for (let i = 0; i <= 200; i++) {
+            let random = Math.random() * 100
+            let item = {
+              name: "",
+              itemId: "",
+              hasMine: false,
+            }
+            // rare:1 40%;rare:2 20%;rare:3 
+            let rare = 0
+            if (random < 20) {
+              rare = 2
+            } else if (random < 60) {
+              rare = 1
+            }
+            if (rare) {
+              let rareList = this.itemList[2].filter((e) => {
+                return e.rare == rare
+              })
+              let index = Math.floor(Math.random() * (rareList.length))
+              item.name = rareList[index].name
+              item.itemId = rareList[index].id
+            }
+            list.push(item)
+          }
+          this.mineList = list
+          this.isMine = true
+        },
+        endMine() {
+          alert("结束挖矿")
+          this.isMine = false
         },
         // 系统
+        updateItems(item) {
+          let userItem = this.user.items
+          let itemIndex = userItem.findIndex((e) => {
+            return e.itemId === item.id
+          })
+          if (itemIndex > -1) {
+            userItem[itemIndex].num = userItem[itemIndex].num + 1
+          } else {
+            userItem.push({ itemId: item.id, name: item.name, num: 1 })
+          }
+        },
         changeModel(index) {
           let user = this.user
           let item = this.menu[index]
-          if (user.lockMenu.indexOf(index) > -1) {
+          if (item.id > 3) {
+            alert("锐意制作中！")
+            return
+          }
+          if (user.lockMenu.indexOf(item.id) > -1) {
             this.pageNum = index
-          } else if (user.lockMenu.indexOf(index) == -1 && user.money >= item.lock) {
-            this.user.money = user.money - item.lock
-            this.user.lockMenu.push(index)
+          } else if (user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock) {
+            user.money = user.money - item.lock
+            user.lockMenu.push(item.id)
             alert("已解锁 " + item.name)
             this.pageNum = index
           }
@@ -131,15 +255,16 @@
           alert("锐意制作中！")
         },
         saveGame() {
-          let data = JSON.stringify(this.user)
+          let data = encodeURIComponent(JSON.stringify(this.user))
           let str64 = window.btoa(data)
           localStorage.setItem("kumokoData", str64)
+          alert("保存成功")
         },
         loadGame() {
           let str64 = localStorage.getItem("kumokoData")
           if (str64) {
             let data = window.atob(str64)
-            this.user = JSON.parse(data)
+            this.user = JSON.parse(decodeURIComponent(data))
           }
         }
       },
