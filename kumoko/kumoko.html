@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+  <script src="https://cdn.staticfile.org/vue/2.2.2/vue.min.js"></script>
+  <title>云可</title>
+</head>
+
+<body>
+  <noscript>
+    <strong>We're sorry but kumoko doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+  </noscript>
+  <div id="app">
+    <div>名字：<span v-if="!isEdit">{{user.name}}</span><input v-else v-model="user.name" /><button @click="editName">{{isEdit?'保存':'修改'}}</button></div>
+    <div>云币：{{user.money}}</div>
+    <div>自动存档：{{user.autoSave?"已开启":"未开启"}}<button @click="editAutoSave">{{user.autoSave?'关闭':'开启'}}</button></div>
+    <button @click="saveGame">存档</button>
+    <div>
+      <div>菜单</div>
+      <div><button @click="changeModel(index)" v-for="(item, index) in menu" :disabled="!(user.lockMenu.indexOf(index) > -1 || (user.lockMenu.indexOf(index) == -1 && user.money >= item.lock))"><span>{{user.lockMenu.indexOf(index) == -1 && user.money >= item.lock?'解锁':''}}</span>{{item.name}}</button></div>
+    </div>
+    <div v-if="pageNum == 0">
+      <div>打工</div>
+      <button @click="startBaito">开始打工！</button>
+    </div>
+    <div v-else>锐意制作中！</div>
+  </div>
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        user: {
+          name: "user_114514",
+          money: 0,
+          autoSave: false,
+          lockMenu: [0]
+        },
+        pageNum: 0,
+        isEdit: false,
+        menu: [{ name: '打工', lock: 0 }, { name: '种地', lock: 100 } ,{ name: '挖矿', lock: 300 }]
+      },
+      methods: {
+        startBaito() {
+          this.user.money = this.user.money + 100
+          if (this.user.autoSave) {
+            this.saveGame()
+          }
+        },
+        // 系统
+        changeModel(index) {
+          let user = this.user
+          let item = this.menu[index]
+          if (user.lockMenu.indexOf(index) > -1) {
+            this.pageNum = index
+          } else if (user.lockMenu.indexOf(index) == -1 && user.money >= item.lock) {
+            this.user.money = user.money - item.lock
+            this.user.lockMenu.push(index)
+            this.pageNum = index
+          }
+          if (this.user.autoSave) {
+            this.saveGame()
+          }
+
+        },
+        editAutoSave() {
+          let autoSave = this.user.autoSave
+          if (autoSave) {
+            this.user.autoSave = false
+          } else {
+            this.user.autoSave = true
+          }
+          this.saveGame()
+        },
+        editName() {
+          if (this.isEdit) {
+            this.isEdit = false
+          } else {
+            this.isEdit = true
+          }
+          if (this.user.autoSave) {
+            this.saveGame()
+          }
+        },
+        saveGame() {
+          let data = JSON.stringify(this.user)
+          let str64 =  window.btoa(data)
+          localStorage.setItem("kumokoData", str64)
+        },
+        loadGame() {
+          let str64 = localStorage.getItem("kumokoData")
+          if (str64) {
+            let data =  window.atob(str64)
+            this.user = JSON.parse(data)
+          }
+        }
+      },
+      mounted() {
+        this.loadGame()
+      },
+    })
+  </script>
+</body>
+
+</html>
