@@ -10,7 +10,8 @@
 
 <body>
   <noscript>
-    <strong>We're sorry but kumoko doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    <strong>We're sorry but kumoko doesn't work properly without JavaScript enabled. Please enable it to
+      continue.</strong>
   </noscript>
   <div id="app">
     <div v-if="!isMine">
@@ -31,7 +32,8 @@
         自动存档：{{ user.autoSave ? "已开启" : "未开启"
         }}<button @click="editAutoSave">{{ user.autoSave ? "关闭" : "开启" }}</button>
       </div>
-      <button @click="saveGame">存档</button><button @click="outputSave">导出存档</button><button @click="inputSave">导入存档</button>
+      <button @click="saveGame">存档</button><button @click="outputSave">导出存档</button><button
+        @click="inputSave">导入存档</button>
       <div>
         <div>菜单</div>
         <div>
@@ -68,7 +70,8 @@
           <div v-for="(item1, index1) in item.list" :key="'shop-'+index1">
             <div v-for="(items, itemI) in itemList[index]" :key="'items-'+itemI">
               <div v-if="item1 == items.id">
-                {{ items.name }}-{{ items.money }}元<button @click="shopBuy(index,items)" :disabled="user.money < items.money">
+                {{ items.name }}-{{ items.money }}元<button @click="shopBuy(index,items)"
+                  :disabled="user.money < items.money">
                   购买
                 </button>
               </div>
@@ -83,8 +86,21 @@
     </div>
     <div v-else><button @click="endMine">返回</button>
       <div>矿洞{{floor}}层</div>
-      <div style="display: flex;flex-wrap: wrap;">
-        <div style="height: 30px;width: 30px;border: 1px solid;margin: 1px;font-size: 12px;text-align: center;line-height: 30px;" v-for="(item, index) in mineList" :key="index">{{item.name}}</div>
+      <div>剩余体力：{{life}}</div>
+      <div>战利品：
+        <span v-for="(item, index) in mineItems" :key="index">
+          {{item.name}}x{{item.num}}|
+        </span>
+        <span v-if="mineItems.length == 0">无</span>
+      </div>
+      <div style="max-width:600px;display:flex;flex-wrap: wrap;background: black;">
+        <div
+          style="height: 30px;width: 30px;border: 1px solid;margin: 1px;font-size: 12px;text-align: center;line-height: 30px;"
+          v-for="(item, index) in mineList" :key="index"
+          :style="!item.hasMine?'background:darksalmon':item.isStair?'background: red;':item.isHole?'background: black;color:white':'background:white'"
+          @click="item.isStair || item.isHole?goDownStair(item):mineMines(index)">
+          <div v-if="item.hasMine">{{item.name}}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -129,12 +145,14 @@
           { id: 1, name: "煤块", rare: 2 },
           { id: 2, name: "铜块", rare: 3 },
           { id: 3, name: "金块", rare: 4 },
-          { id: 4, name: "云可的胖次", rare: 5 }]
+          { id: 4, name: "胖次", rare: 5 }]
         ],
         // 挖矿相关
         isMine: false,
         mineList: [],
-        floor: 1
+        floor: 1,
+        life: 1000, // 体力
+        mineItems: [], // 挖矿战利品
       },
       methods: {
         // 打工
@@ -170,15 +188,26 @@
           for (let i = 0; i <= 200; i++) {
             let random = Math.random() * 100
             let item = {
+              index: i,
               name: "",
               itemId: "",
               hasMine: false,
+              isStair: false, // 是否楼梯
+              isHole: false, // 是否深坑
+              jump: 0, // 深坑跳跃层级
             }
-            // rare:1 40%;rare:2 20%;rare:3 
+            // rare:1 55%;rare:2 30%;rare:3 10%；rare:4 4%;rare:5 1%
             let rare = 0
-            if (random < 20) {
+            let up = (this.floor - 1) * 0.01 > 5 ? 5 : (this.floor - 1) * 0.01
+            if (random <= 1 + up) {
+              rare = 5
+            } else if (random <= 2.4 + up) {
+              rare = 4
+            } else if (random <= 6 - up) {
+              rare = 3
+            } else if (random <= 18 - up) {
               rare = 2
-            } else if (random < 60) {
+            } else if (random <= 33 - up) {
               rare = 1
             }
             if (rare) {
@@ -191,12 +220,90 @@
             }
             list.push(item)
           }
+          let temp = list.filter((e) => {
+            return !e.name
+          })
+          // 计算楼梯
+          let stair = Math.floor(Math.random() * (temp.length))
+          let stairI = temp[stair].index
+          list[stairI].isStair = true
+          list[stairI].name = "楼梯"
+          list[stairI].jump = 1
+          // 计算下落的洞
+          // 0个洞 70%;1个洞 17%;2个洞 9%;3个洞 4%
+          let holeFlag = Math.random() * 100
+          let num
+          if (holeFlag <= 4) {
+            num = 3
+          } else if (holeFlag <= 9) {
+            num = 2
+          } else if (holeFlag <= 17) {
+            num = 1
+          } else if (holeFlag <= 70) {
+            num = 0
+          }
+          if (num > 0) {
+            for (let h = 1; h <= num; h++) {
+              let tempH = list.filter((e) => {
+                return !e.name
+              })
+              let hole = Math.floor(Math.random() * (tempH.length))
+              let holeI = tempH[stair].index
+              list[holeI].isHole = true
+              // 最多跳10层
+              list[holeI].jump = Math.round(Math.random() * 4) + 1
+              list[holeI].name = "洞"
+            }
+          }
           this.mineList = list
           this.isMine = true
+        },
+        mineMines(index) {
+          let item = this.mineList[index]
+          if (item.hasMine) {
+            return
+          }
+          if (!item.name) {
+            this.mineList[index].hasMine = true
+            this.life = this.life - 1
+            return
+          }
+          let mineItems = this.mineItems
+          let itemIndex = mineItems.findIndex((e) => {
+            return e.itemId === item.itemId
+          })
+          if (itemIndex > -1) {
+            mineItems[itemIndex].num = mineItems[itemIndex].num + 1
+          } else {
+            mineItems.push({ itemId: item.itemId, name: item.name, num: 1 })
+          }
+          item.hasMine = true
+          this.life = this.life - 1
+          if (this.life <= 1) {
+            this.endMine()
+          }
         },
         endMine() {
           alert("结束挖矿")
           this.isMine = false
+          this.floor = 1
+          this.mineItems = []
+          this.life = 1000
+        },
+        // 下楼梯
+        goDownStair(item) {
+          if (item.isHole) {
+            alert("踩到洞了，掉落" + item.jump + "层")
+            this.life = this.life - item.jump
+          } else if (item.isStair && !item.hasMine) {
+            item.hasMine = true
+            return
+          }
+          this.floor = this.floor + item.jump
+          this.startMine()
+          if (this.life <= 1) {
+            this.endMine()
+          }
         },
         // 系统
         updateItems(item) {
