@@ -23,7 +23,10 @@
           {{ isEdit ? "保存" : "修改" }}
         </button>
       </div>
-      <div style="display: flex;">第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})<div><span v-if="user.isStop">已暂停</span><button @click="stopTime">{{user.isStop?'继续':'暂停'}}</button></div>
+      <div>第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})
+        <div style="display: flex;"><span v-if="user.isStop">时间已停止</span><button @click="stopTime">{{user.isStop?'时间恢复流动':'时间停止'}}</button></div>
+        <div>Tips:时间停止后，一次行动增加一小时</div>
+        <div style="color: red;">强烈推荐时间停止！</div>
       </div>
       <div>云币：{{ user.money }}枚</div>
       <div>体力：{{ user.hp }}/{{user.maxHp}}</div>
@@ -253,7 +256,7 @@
                 saveGame(user)
               }
             }
-          }, 100)
+          }, 5000)
         },
       },
       mounted() {
