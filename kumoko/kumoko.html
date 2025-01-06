@@ -4,7 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
-  <script src="https://cdn.staticfile.net/vue/2.2.2/vue.min.js"></script>
+  <script src="./static/script/vue.min.js"></script>
+  <script src="./static/script/httpVueLoader.js"></script>
+  <script src="./static/script/common.js"></script>
   </link>
   <title>云可</title>
 </head>
@@ -15,407 +17,120 @@
       continue.</strong>
   </noscript>
   <div id="app">
-    <i class="mdi mdi-cake"></i>
-    <i class="fa fa-cake"></i>
-    <div v-if="!isMine">
+    <div>
       <div>
         名字：<span v-if="!isEdit">{{ user.name }}</span><input v-else v-model="user.name" /><button @click="editName">
           {{ isEdit ? "保存" : "修改" }}
         </button>
       </div>
+      <div style="display: flex;">第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})<div><span v-if="user.isStop">已暂停</span><button @click="stopTime">{{user.isStop?'继续':'暂停'}}</button></div>
+      </div>
       <div>云币：{{ user.money }}枚</div>
-      <div>打工点数：{{ user.baitoPoint }}点</div>
-      <div>道具：
-        <span v-for="(item, index) in user.items" :key="index">
-          {{item.name}}x{{item.num}}|
-        </span>
-        <span v-if="user.items.length == 0">无</span>
+      <div>体力：{{ user.hp }}/{{user.maxHp}}</div>
+      <div style="display: flex;">今日行动安排：<div v-for="(item, index) in user.act" :key="index" :style="item.on?'color:blue':''">|{{actList[item.value]}}<span v-if="item.on">中</span>|</div>
       </div>
       <div>
         自动存档：{{ user.autoSave ? "已开启" : "未开启"
         }}<button @click="editAutoSave">{{ user.autoSave ? "关闭" : "开启" }}</button>
       </div>
-      <button @click="saveGame">存档</button><button @click="outputSave">导出存档</button><button @click="inputSave">导入存档</button>
-      <div>
-        <div>菜单</div>
-        <div>
-          <button @click="changeModel(index)" v-for="(item, index) in menu" :key="index" :disabled="
-          !(
-            user.lockMenu.indexOf(item.id) > -1 ||
-            (user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock)
-          )
-        ">
-            <span>{{
-              user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock ? "解锁" : ""
-              }}</span>{{ item.name }}
-          </button>
-        </div>
-      </div>
-      <div>{{ menu[pageNum].name }}</div>
-      <div v-if="menu[pageNum].id == 0">
-        <button @click="startBaito(index)" v-for="(item, index) in baitoMenu" :key="index" :disabled="
-        !(
-          user.lockBaito.indexOf(item.id) > -1 ||
-          (user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock)
-        )
-      ">
-          <span>{{
-            user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock
-            ? "解锁"
-            : ""
-            }}</span>{{ item.name }}
-        </button>
-      </div>
-      <div v-else-if="menu[pageNum].id == 1">
-        <div v-for="(item, index) in shop" :key="index">
-          <div>{{ item.name }}：</div>
-          <div v-for="(item1, index1) in item.list" :key="'shop-'+index1">
-            <div v-for="(items, itemI) in itemList[index]" :key="'items-'+itemI">
-              <div v-if="item1 == items.id">
-                {{ items.name }}-{{ items.money }}元<button @click="shopBuy(index,items)" :disabled="user.money < items.money">
-                  购买
-                </button>
-              </div>
-            </div>
-          </div>
-          <div v-if="item.list.length == 0">暂无</div>
-        </div>
-      </div>
-      <div v-else-if="menu[pageNum].id == 2">
-        <div style="display: flex;">
-          <div v-for="(item, index) in user.items" :key="index" v-if="item.type == 1" style="padding: 2px;margin: 2px;border: 1px solid black;cursor:pointer" :style="seed===item.itemId?'background:grey':''" @click="selectSeed(item)">
-            {{item.name}}x{{item.num}}
-          </div>
-        </div>
-        <div style="display: flex;">
-          <div v-for="(item, index) in farm" :key="index" style="height: 80px;width: 80px;border: 1px solid black;border-radius: 5px;margin: 5px;cursor:pointer" @click="doFarm(index)">
-            <div v-if="item.name">{{item.name}}{{changeTime(item.lastTime)?changeTime(item.lastTime):'完成！'}}</div>
-          </div>
-        </div>
-      </div>
-      <div v-else-if="menu[pageNum].id == 3">
-        <button @click="startMine">开始挖矿</button>
-      </div>
+      <button @click="saveGame(user)">存档</button><button>导出存档</button><button>导入存档</button>
     </div>
-    <div v-else><button @click="endMine">返回</button>
-      <div>矿洞{{floor}}层</div>
-      <div>剩余体力：{{life}}</div>
-      <div>战利品：
-        <span v-for="(item, index) in mineItems" :key="index">
-          {{item.name}}x{{item.num}}|
-        </span>
-        <span v-if="mineItems.length == 0">无</span>
-      </div>
-      <div style="max-width:600px;display:flex;flex-wrap: wrap;background: black;">
-        <div style="height: 30px;width: 30px;border: 1px solid;margin: 1px;font-size: 12px;text-align: center;line-height: 30px;" v-for="(item, index) in mineList" :key="index" :style="!item.hasMine?'background:darksalmon':item.isStair?'background: red;':item.isHole?'background: black;color:white':'background:white'" @click="item.isStair || item.isHole?goDownStair(item):mineMines(index)">
-          <div v-if="item.hasMine">{{item.name}}</div>
-        </div>
-      </div>
+    <div style="display: flex;">
+      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)">{{item}}</button>
+    </div>
+    <baito :user="user" v-if="menu == 0" @on-jump-today="goToTomorrow"></baito>
+    <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
+    <div style="height: 150px;overflow: auto;" v-if="showLog" ref="logBox">
+      <div v-for="(item, index) in log" :key="index">{{item}}</div>
     </div>
   </div>
   <script>
     new Vue({
       el: '#app',
+      components: {
+        'baito': httpVueLoader('./static/components/baito.vue'),
+      },
       data: {
-        user: {
-          name: "云可",
-          money: 0,
-          autoSave: false,
-          lockMenu: [0, 1], // 已解锁功能
-          baitoPoint: 0, // 打工点数
-          lockBaito: [0], // 已解锁打工
-          items: [], // 拥有道具
-        },
-        pageNum: 0,
+        user: {},
+        version: "0.0.1",
         isEdit: false,
-        menu: [{ id: 0, name: '打工', lock: 0 },
-        { id: 1, name: '商店', lock: 0 },
-        { id: 2, name: '种地', lock: 50 },
-        { id: 3, name: '挖矿', lock: 100 },
-        { id: 4, name: '合成', lock: 200 },
-        { id: 5, name: '冒险', lock: 200 }],
-        // 打工相关
-        baitoMenu: [{ id: 0, name: '整理', money: 10, lock: 0, time: 5, point: 1 },
-        { id: 1, name: '跑腿', money: 30, lock: 10, time: 10, point: 2 },
-        { id: 2, name: '售卖', money: 80, lock: 20, time: 20, point: 5 },
-        { id: 3, name: '社长', money: 100, lock: 50, time: 30, point: 10 }],
-        // 商店相关
-        shop: [{ name: "道具", list: [] },
-        { name: "农场", list: [0] }],
-        // 道具相关
-        itemList: [
-          // 日常
-          [],
-          // 农场
-          [{ id: 0, name: "胡萝卜种子", money: 1, type: 1, time: 1, result: 5 },
-          { id: 1, name: "胡萝卜", money: 10, type: 1, parent: 0 }],
-          // 挖矿
-          [{ id: 0, name: "石头", rare: 1 },
-          { id: 1, name: "煤块", rare: 2 },
-          { id: 2, name: "铜块", rare: 3 },
-          { id: 3, name: "金块", rare: 4 },
-          { id: 4, name: "胖次", rare: 5 }]
-        ],
-        farm: [{}, {}, {}, {}],
-        // 挖矿相关
-        isMine: false,
-        mineList: [],
-        floor: 1,
-        life: 1000, // 体力
-        mineItems: [], // 挖矿战利品
-        timeInterval: null,
-        seed: null
+        menu: 0,
+        dateInterval: null,
+        showLog: false,
+        log: []
       },
       methods: {
-        // 打工
-        startBaito(index) {
-          let user = this.user
-          let item = this.baitoMenu[index]
-          if (user.lockBaito.indexOf(item.id) > -1) {
-            user.money = user.money + item.money
-            user.baitoPoint = user.baitoPoint + item.point
-          } else if (user.lockBaito.indexOf(item.id) == -1 && user.baitoPoint >= item.lock) {
-            user.baitoPoint = user.baitoPoint - item.lock
-            user.lockBaito.push(item.id)
-            alert("已解锁 " + item.name)
-            user.money = user.money + item.money
-          }
-          if (this.user.autoSave) {
-            this.saveGame()
-          }
-        },
-        // 商店
-        shopBuy(index, item) {
-          let list = this.itemList[index]
-          this.updateItems(item);
-          this.user.money = this.user.money - item.money
-          if (this.user.autoSave) {
-            this.saveGame()
-          }
-        },
-        // 农场
-        changeTime(time) {
-          if (!time) {
-            return
-          }
-          let h = parseInt(time / 60 / 60 % 24) //计算小时
-          let m = parseInt(time / 60 % 60) //计算分数
-          let s = parseInt(time % 60) //计算当前秒数
-          let hms = h.toString().padStart(2, "0") + ":" + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0")
-          return hms
-        },
-        selectSeed(item) {
-          this.seed = item.itemId
-        },
-        doFarm(index) {
-          if (this.farm[index].lastTime <= 0) {
-            let id = this.farm[index].id
-            let farmList = this.itemList[1]
-            let idx = farmList.findIndex((e) => {
-              return e.id === id
+        // 更新日志
+        saveLog(str) {
+          this.log.push(str)
+          if (this.showLog) {
+            this.$nextTick(() => {
+              const box = this.$refs.logBox
+              box.scrollTop = box.scrollHeight
             })
-            let parent = farmList[idx]
-            let chidx = farmList.findIndex((e) => {
-              return e.parent === parent.id
-            })
-            let child = farmList[chidx]
-            this.updateItems(child, parent.result);
-            this.$set(this.farm, index, {})
-            return
           }
-          if (this.seed === null) {
-            return
-          }
-          let farmList = this.itemList[1]
-          let idx = farmList.findIndex((e) => {
-            return e.id === this.seed
-          })
-          let item = farmList[idx]
-          this.$set(this.farm, index, { name: item.name, lastTime: item.time * 60, id: item.id })
-          let user = this.user.items
-          let id = user.findIndex((e) => {
-            return e.itemId === this.seed
-          })
-          if (id > -1) {
-            user[id].num = user[id].num - 1
-            if (user[id].num <= 0) {
-              user.splice(id, 1)
-              this.seed = null
-            }
-          }
-          let farmItem = this.farm[index]
-          let self = this
-          let timeInterval = setInterval(function () {
-            farmItem.lastTime = farmItem.lastTime - 1
-            if (self.user.autoSave) {
-              self.saveGame()
-            }
-            if (farmItem.lastTime <= 0) {
-              // farmItem.lastTime = 0
-              clearInterval(timeInterval)
-            }
-          }, 1000)
         },
-        // 挖矿
-        startMine() {
-          let mine = this.itemList[2]
-          let list = []
-          for (let i = 0; i <= 200; i++) {
-            let random = Math.random() * 100
-            let item = {
-              index: i,
-              name: "",
-              itemId: "",
-              hasMine: false,
-              isStair: false, // 是否楼梯
-              isHole: false, // 是否深坑
-              jump: 0, // 深坑跳跃层级
-            }
-            // rare:1 55%;rare:2 30%;rare:3 10%；rare:4 4%;rare:5 1%
-            let rare = 0
-            let up = (this.floor - 1) * 0.01 > 5 ? 5 : (this.floor - 1) * 0.01
-            if (random <= 1 + up) {
-              rare = 5
-            } else if (random <= 2.4 + up) {
-              rare = 4
-            } else if (random <= 6 - up) {
-              rare = 3
-            } else if (random <= 18 - up) {
-              rare = 2
-            } else if (random <= 33 - up) {
-              rare = 1
-            }
-            if (rare) {
-              let rareList = this.itemList[2].filter((e) => {
-                return e.rare == rare
-              })
-              let index = Math.floor(Math.random() * (rareList.length))
-              item.name = rareList[index].name
-              item.itemId = rareList[index].id
-            }
-            list.push(item)
-          }
-          let temp = list.filter((e) => {
-            return !e.name
-          })
-          // 计算楼梯
-          let stair = Math.floor(Math.random() * (temp.length))
-          let stairI = temp[stair].index
-          list[stairI].isStair = true
-          list[stairI].name = "楼梯"
-          list[stairI].jump = 1
-          // 计算下落的洞
-          // 0个洞 70%;1个洞 17%;2个洞 9%;3个洞 4%
-          let holeFlag = Math.random() * 100
-          let num
-          if (holeFlag <= 4) {
-            num = 3
-          } else if (holeFlag <= 9) {
-            num = 2
-          } else if (holeFlag <= 17) {
-            num = 1
-          } else if (holeFlag <= 70) {
-            num = 0
-          }
-          if (num > 0) {
-            for (let h = 1; h <= num; h++) {
-              let tempH = list.filter((e) => {
-                return !e.name
-              })
-              let hole = Math.floor(Math.random() * (tempH.length))
-              let holeI = tempH[stair].index
-              list[holeI].isHole = true
-              // 最多跳10层
-              list[holeI].jump = Math.round(Math.random() * 4) + 1
-              list[holeI].name = "洞"
-            }
-          }
-          this.mineList = list
-          this.isMine = true
+        // 显示日志
+        showLogFunction() {
+          this.showLog = !this.showLog
         },
-        mineMines(index) {
-          let item = this.mineList[index]
-          if (item.hasMine) {
-            return
-          }
-          if (!item.name) {
-            this.mineList[index].hasMine = true
-            this.life = this.life - 1
-            return
-          }
-          let mineItems = this.mineItems
-          let itemIndex = mineItems.findIndex((e) => {
-            return e.itemId === item.itemId
-          })
-          if (itemIndex > -1) {
-            mineItems[itemIndex].num = mineItems[itemIndex].num + 1
+        // 切换菜单
+        changeMenu(index) {
+          this.menu = index
+        },
+        // 停止时间
+        stopTime() {
+          if (this.user.isStop) {
+            this.setIntervalDate()
           } else {
-            mineItems.push({ itemId: item.itemId, name: item.name, num: 1 })
+            clearInterval(this.dateInterval)
           }
-          item.hasMine = true
-          this.life = this.life - 1
-          if (this.life <= 1) {
-            this.endMine()
+          this.user.isStop = !this.user.isStop
+        },
+        // 判断时间
+        judgeTime(time) {
+          let str = ""
+          if (time >= 6 && time < 14) {
+            str = "早上"
+          } else if (time >= 14 && time < 22) {
+            str = "下午"
+          } else if (time >= 22 || (time >= 0 && time < 6)) {
+            str = "晚上"
+          }
+          return str
+        },
+        // 更新数据
+        updateGame() {
+          let oldData = this.user
+          let user = {
+            name: oldData.name ? oldData.name : "云可",
+            money: oldData.money ? oldData.money : 0,
+            hp: oldData.hp ? oldData.hp : 100,
+            maxHp: oldData.maxHp ? oldData.maxHp : 100,
+            autoSave: oldData.autoSave ? oldData.autoSave : false,
+            isStop: oldData.isStop ? oldData.isStop : false,
+            items: oldData.items ? oldData.items : [], // 拥有道具
+            date: oldData.date ? oldData.date : 1,
+            time: oldData.time ? oldData.time : 8,
+            act: oldData.act ? oldData.act : [{ value: 0, on: false },
+            { value: 0, on: false },
+            { value: 0, on: false },
+            { value: 0, on: false }],
+            actLv: oldData.actLv ? oldData.actLv : [1, 1, 1, 1, 1],
+            version: this.version,
+          }
+          user.act.forEach((e) => {
+            e.on = false;
+          });
+          let index = Math.floor((user.time - 6) / 4)
+          user.act[index].on = true
+          this.user = user
+          saveGame(this.user, 1)
+          if (!this.user.isStop) {
+            this.setIntervalDate()
           }
         },
-        endMine() {
-          alert("结束挖矿")
-          this.isMine = false
-          this.floor = 1
-          this.mineItems = []
-          this.life = 1000
-        },
-        // 下楼梯
-        goDownStair(item) {
-          if (item.isHole) {
-            alert("踩到洞了，掉落" + item.jump + "层")
-            this.life = this.life - item.jump
-          } else if (item.isStair && !item.hasMine) {
-            item.hasMine = true
-            return
-          }
-          this.floor = this.floor + item.jump
-          this.startMine()
-          if (this.life <= 1) {
-            this.endMine()
-          }
-        },
-        // 系统
-        updateItems(item, num) {
-          if (num == undefined) {
-            num = 1
-          }
-          let userItem = this.user.items
-          let itemIndex = userItem.findIndex((e) => {
-            return e.itemId === item.id
-          })
-          if (itemIndex > -1) {
-            userItem[itemIndex].type = item.type
-            userItem[itemIndex].name = item.name
-            userItem[itemIndex].num = userItem[itemIndex].num + num
-          } else {
-            userItem.push({ itemId: item.id, name: item.name, num: num, type: item.type })
-          }
-        },
-        changeModel(index) {
-          let user = this.user
-          let item = this.menu[index]
-          if (item.id > 3) {
-            alert("锐意制作中！")
-            return
-          }
-          if (user.lockMenu.indexOf(item.id) > -1) {
-            this.pageNum = index
-          } else if (user.lockMenu.indexOf(item.id) == -1 && user.money >= item.lock) {
-            user.money = user.money - item.lock
-            user.lockMenu.push(item.id)
-            alert("已解锁 " + item.name)
-            this.pageNum = index
-          }
-          if (this.user.autoSave) {
-            this.saveGame()
-          }
-        },
+        // 编辑自动存档
         editAutoSave() {
           let autoSave = this.user.autoSave
           if (autoSave) {
@@ -423,8 +138,9 @@
           } else {
             this.user.autoSave = true
           }
-          this.saveGame()
+          saveGame(this.user)
         },
+        // 编辑名字
         editName() {
           if (this.isEdit) {
             this.isEdit = false
@@ -432,28 +148,113 @@
             this.isEdit = true
           }
           if (this.user.autoSave) {
-            this.saveGame()
+            saveGame(this.user)
           }
         },
-        outputSave() {
-          alert("锐意制作中！")
-        },
-        inputSave() {
-          alert("锐意制作中！")
-        },
-        saveGame() {
-          let data = encodeURIComponent(JSON.stringify(this.user))
-          let str64 = window.btoa(data)
-          localStorage.setItem("kumokoData", str64)
-          alert("保存成功")
-        },
+        // 读取存档
         loadGame() {
           let str64 = localStorage.getItem("kumokoData")
           if (str64) {
             let data = window.atob(str64)
             this.user = JSON.parse(decodeURIComponent(data))
           }
-        }
+          if (this.user.version != this.version) {
+            this.updateGame()
+          } else {
+            if (!this.user.isStop) {
+              this.setIntervalDate()
+            }
+          }
+        },
+        // 行动逻辑
+        actFunction(index) {
+          let user = this.user
+          let act = user.act[index - 1]
+          let level = user.actLv[act.value]
+          switch (act.value) {
+            case 0:
+              user.hp = user.hp + (15 + level * 5) > user.maxHp ? user.maxHp : user.hp + (15 + level * 5)
+              this.saveLog(`休息完了(体力+${(15 + level * 5)})`)
+              break;
+            case 1:
+              user.hp = user.hp - (20 + level - 1)
+              user.money = user.money + (20 + (level + 1) * 10)
+              this.saveLog(`打工结束咯(体力-${(20 + level - 1)}，云币+${(20 + (level + 1) * 10)})`)
+              break;
+            case 2:
+              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
+              this.saveLog(`探索结束咯(体力-${(20 + level)})`)
+              break;
+            case 3:
+              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
+              this.saveLog(`钓鱼结束咯(体力-${(20 + level)})`)
+              break;
+            case 4:
+              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
+              this.saveLog(`挖矿结束咯(体力-${(20 + level)})`)
+              break;
+            default:
+              break;
+          }
+          if (user.hp <= 0) {
+            this.saveLog("负荷工作了，必须得休息了(体力+50)")
+            this.goToTomorrow()
+          } else {
+            if (user.autoSave) {
+              saveGame(user)
+            }
+          }
+        },
+        // 跳过今天
+        goToTomorrow() {
+          let user = this.user
+          user.time = 0
+          user.date = user.date + 1
+          user.hp = user.hp + 50 > user.maxHp ? user.maxHp : user.hp + 50
+          if (user.autoSave) {
+            saveGame(user)
+          }
+          clearInterval(this.dateInterval)
+          this.$nextTick(() => {
+            if (!user.isStop) {
+              this.setIntervalDate()
+            }
+          })
+          this.saveLog("睡觉睡觉(体力+50)")
+          this.saveLog(`第${user.date}天`)
+        },
+        // 计算日期
+        setIntervalDate() {
+          let self = this
+          this.dateInterval = setInterval(function () {
+            let user = self.user
+            user.time = user.time + 1
+            if (user.time == 24) {
+              self.saveLog("一天又结束了，睡觉睡觉(体力+50)")
+              self.goToTomorrow()
+            } else if (user.time >= 6 && (user.time - 6) % 4 == 0 && user.time <= 21) { // 每4小时更换一次行动
+              let index = (user.time - 6) / 4
+              user.act.forEach((e) => {
+                e.on = false;
+              });
+              user.act[index].on = true;
+              if (index != 0) {
+                self.actFunction(index)
+              }
+            } else if (user.time > 21 && user.time < 24) {
+              if (user.time == 22) {
+                let index = (user.time - 6) / 4
+                self.actFunction(index)
+              }
+              user.act.forEach((e) => {
+                e.on = false;
+              });
+              if (user.autoSave) {
+                saveGame(user)
+              }
+            }
+          }, 100)
+        },
       },
       mounted() {
         this.loadGame()
