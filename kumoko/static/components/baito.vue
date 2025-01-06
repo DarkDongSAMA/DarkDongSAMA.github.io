@@ -13,30 +13,60 @@
       </div>
     </div>
     <div style="display: flex">
-      <div v-for="(item, index) in actList" :key="index" @click="updateAct(index)">
+      <div
+        v-for="(item, index) in actList"
+        :key="index"
+        @click="updateAct(index)"
+      >
         <button>{{ item }}</button>
       </div>
       <button style="margin-left: 20px" @click="goToTomorrow">睡觉</button>
     </div>
     <div v-if="user.isStop">
-      <div v-if="menu == 0">
-        <div>休息菜单</div>
-        <div><button>泡温泉</button><button>餐厅</button></div>
+      <div v-if="place == -1">
+        <div>选择出行地点</div>
+        <div>
+          <button
+            v-for="(item, index) in placeList"
+            :key="index"
+            @click="changePlace(index)"
+          >
+            {{ item }}
+          </button>
+        </div>
       </div>
-      <div v-if="menu == 1">
-        <div>打工菜单</div>
-        <div></div>
+      <div v-else>
+        <button @click="changePlace(-1)">返回</button>
+        <div>选择行动</div>
+        <div style="display: flex">
+          <div
+            v-for="(item, index) in actList"
+            :key="index"
+            @click="changeMenu(index)"
+          >
+            <button>{{ item }}</button>
+          </div>
+        </div>
+        <div v-if="menu == 0">
+          <div>休息菜单</div>
+          <div></div>
+        </div>
+        <div v-if="menu == 1">
+          <div>打工菜单</div>
+          <div></div>
+        </div>
+        <div v-if="menu == 2">
+          <div>探索菜单</div>
+          <div></div>
+        </div>
+        <div v-if="menu == 3">钓鱼菜单</div>
+        <div v-if="menu == 4">挖矿菜单</div>
       </div>
-      <div v-if="menu == 2">
-        <div>探索菜单</div>
-        <div><button>附近的草地</button><button>附近的山洞</button></div>
-      </div>
-      <div v-if="menu == 3">钓鱼菜单</div>
-      <div v-if="menu == 4">挖矿菜单</div>
     </div>
     <div style="margin-top: 20px">
-      说明：<br />
-      休息：Lv.{{ user.actLv[0] }} (恢复 {{ 15 + user.actLv[0] * 5 }} 体力)<br />
+      自动行动说明：<br />
+      休息：Lv.{{ user.actLv[0] }} (恢复
+      {{ 15 + user.actLv[0] * 5 }} 体力)<br />
       打工：Lv.{{ user.actLv[1] }} (消耗 {{ 20 + user.actLv[1] - 1 }} 体力，获得
       {{ 20 + (user.actLv[1] + 1) * 10 }} 云币)<br />
       探索：Lv.{{ user.actLv[2] }} (消耗
@@ -58,6 +88,7 @@ module.exports = {
     return {
       active: 0,
       menu: 0,
+      place: -1,
     };
   },
   methods: {
@@ -65,14 +96,21 @@ module.exports = {
     goToTomorrow() {
       this.$emit("on-jump-today");
     },
+    // 切换菜单
+    changeMenu(index) {
+      this.menu = index;
+    },
     // 选择行动
     changeIndex(index) {
       this.active = index;
     },
+    // 选择出行地点
+    changePlace(index) {
+      this.place = index;
+    },
     // 更新行动
     updateAct(index) {
       let user = this.user;
-      this.menu = index;
       user.act[this.active].value = index;
       if (user.autoSave) {
         saveGame(user);

@@ -13,3 +13,5 @@ let saveGame = (user, flag) => {
 let itemList = [{ id: 1, name: "树枝" }]
 
 let areaList = []
+
+let placeList = ["人界", "魔界", "天界"]

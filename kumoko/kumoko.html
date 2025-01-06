@@ -25,7 +25,7 @@
       </div>
       <div>第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})
         <div style="display: flex;"><span v-if="user.isStop">时间已停止</span><button @click="stopTime">{{user.isStop?'时间恢复流动':'时间停止'}}</button></div>
-        <div>Tips:时间停止后，一次行动增加一小时</div>
+        <div>Tips:时间停止后，行动一次消耗一小时或以上</div>
         <div style="color: red;">强烈推荐时间停止！</div>
       </div>
       <div>云币：{{ user.money }}枚</div>
