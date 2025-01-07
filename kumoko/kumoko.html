@@ -39,9 +39,10 @@
       <button @click="saveGame(user)">存档</button><button>导出存档</button><button>导入存档</button>
     </div>
     <div style="display: flex;">
-      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)">{{item}}</button>
+      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)" :disabled="index == 1 && !user.isStop">{{item}}</button>
     </div>
     <baito :user="user" v-if="menu == 0"></baito>
+    <travel :user="user" v-if="menu == 1"></travel>
     <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
     <div style="height: 150px;overflow: auto;" v-if="showLog" ref="logBox">
       <div v-for="(item, index) in log" :key="index">{{item}}</div>
@@ -52,6 +53,7 @@
       el: '#app',
       components: {
         'baito': httpVueLoader('./static/components/baito.vue'),
+        'travel': httpVueLoader('./static/components/travel.vue'),
       },
       data: {
         user: {},
