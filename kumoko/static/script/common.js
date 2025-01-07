@@ -36,6 +36,16 @@ let addHp = (hp, vm) => {
   }
 }
 
+// 判断钱是否足够
+let judgeMoney = (money, vm) => {
+  let user = vm.user
+  if (user.money - money < 0) {
+    alert("钱不够了！")
+    return false
+  }
+  return true
+}
+
 // 判断体力是否足够
 let judgeHp = (hp, nowHp) => {
   if (nowHp < hp) {
@@ -81,12 +91,34 @@ let addMoney = (money, vm) => {
   user.money = user.money + money
 }
 
-let typeList = ["垃圾", "材料"];
+// 添加道具
+let addItem = (id, num, rare, vm) => {
+  let user = vm.user
+  let userItem = user.items
+  let itemIndex = userItem.findIndex((e) => {
+    return e.id == id
+  })
+  if (itemIndex == -1 && num > 0) {
+    userItem.push({
+      id: id,
+      rare: rare,
+      num: num
+    })
+  } else {
+    userItem[itemIndex].num = userItem[itemIndex].num + num
+    if (userItem[itemIndex].num <= 0) {
+      userItem.splice(itemIndex, 1)
+    }
+  }
+}
+
+let typeList = ["垃圾", "材料", "种子"];
 let itemList = {
   1: { name: ["树枝", "枯树枝", "光树枝"], rare: [1, 2, 3], type: 1 },
   2: { name: ["木头", "魔木", "神木"], rare: [1, 2, 3], type: 1 },
   3: { name: ["杂草", "毒草", "天草"], rare: [1, 2, 3], type: 1 },
-  4: { name: ["易拉罐"], rare: [0], type: 0 }
+  4: { name: ["易拉罐"], rare: [0], type: 0 },
+  5: { name: ["BT种子"], buy: [10], sell: [5], rare: [0], type: 2 }
 };
 
 let areaList = [];
@@ -153,3 +185,6 @@ let placeList = [{
 }, { name: "天界", lock: 10 }];
 
 let shopList = ["商店", "柏青哥店"]
+
+let mallList = [{ id: 5, rare: 0 }]
+
