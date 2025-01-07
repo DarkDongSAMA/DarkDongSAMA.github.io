@@ -209,7 +209,7 @@
             user.time = user.time + 1
             if (user.time == 24) {
               saveLog("一天又结束了，睡觉睡觉(体力+50)", self)
-              goToTomorrow(this)
+              goToTomorrow(self)
             } else if (user.time >= 6 && (user.time - 6) % 4 == 0 && user.time <= 21) { // 每4小时更换一次行动
               let index = (user.time - 6) / 4
               user.act.forEach((e) => {
