@@ -124,16 +124,16 @@ module.exports = {
           self.step = self.step + 1;
         } else if (self.step == 9) {
           if (event <= 0.1) {
-            self.kaiji.push("忧郁大楼的倾斜，圆盘的洞口被堵住了，这下柏青哥变推币机了");
-            lucky = 0.8;
+            self.kaiji.push("由于大楼的倾斜，圆盘的洞口被堵住了，这下柏青哥变推币机了");
+            lucky = 0.7;
           }
-          if (randomNum <= 0.2) {
+          if (randomNum <= 0.2 + lucky) {
             self.kaiji.push("小钢珠穿过了第三层圆盘！");
             self.kaiji.push("恭喜你获得奖金13亿……？被你的同伴顺走了一部分，只剩下了7亿");
             self.step = 0;
             self.start = false;
             clearInterval(self.kaijiTime);
-            addMoney(7000000000, self);
+            addMoney(700000000, self);
           } else {
             self.kaiji.push("小钢珠滚出去了……准备去地下劳动设施打工吧");
             self.step = 0;
