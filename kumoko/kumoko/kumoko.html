@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+  <script src="./static/script/vue.min.js"></script>
+  <script src="./static/script/httpVueLoader.js"></script>
+  <script src="./static/script/common.js"></script>
+  </link>
+  <title>云可</title>
+</head>
+
+<body>
+  <noscript>
+    <strong>We're sorry but kumoko doesn't work properly without JavaScript enabled. Please enable it to
+      continue.</strong>
+  </noscript>
+  <div id="app">
+    <div>
+      <div>
+        名字：<span v-if="!isEdit">{{ user.name }}</span><input v-else v-model="user.name" /><button @click="editName">
+          {{ isEdit ? "保存" : "修改" }}
+        </button>
+      </div>
+      <div>第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})
+        <div style="display: flex;"><span v-if="user.isStop">时间已停止</span><button @click="stopTime">{{user.isStop?'时间恢复流动':'时间停止'}}</button></div>
+        <div>Tips:时间停止后，行动一次消耗一小时或以上</div>
+        <div style="color: red;">强烈推荐时间停止！</div>
+      </div>
+      <div>云币：{{ user.money }}枚</div>
+      <div>体力：{{ user.hp }}/{{user.maxHp}}</div>
+      <div style="display: flex;">今日行动安排：<div v-for="(item, index) in user.act" :key="index" :style="item.on?'color:blue':''">|{{actList[item.value]}}<span v-if="item.on">中</span>|</div>
+      </div>
+      <div>
+        自动存档：{{ user.autoSave ? "已开启" : "未开启"
+        }}<button @click="editAutoSave">{{ user.autoSave ? "关闭" : "开启" }}</button>
+      </div>
+      <button @click="saveGame(user)">存档</button><button>导出存档</button><button>导入存档</button>
+    </div>
+    <div style="display: flex;">
+      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)">{{item}}</button>
+    </div>
+    <baito :user="user" v-if="menu == 0"></baito>
+    <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
+    <div style="height: 150px;overflow: auto;" v-if="showLog" ref="logBox">
+      <div v-for="(item, index) in log" :key="index">{{item}}</div>
+    </div>
+  </div>
+  <script>
+    new Vue({
+      el: '#app',
+      components: {
+        'baito': httpVueLoader('./static/components/baito.vue'),
+      },
+      data: {
+        user: {},
+        version: "0.0.1",
+        isEdit: false,
+        menu: 0,
+        dateInterval: null,
+        showLog: false,
+      },
+      methods: {
+        // 显示日志
+        showLogFunction() {
+          this.showLog = !this.showLog
+        },
+        // 切换菜单
+        changeMenu(index) {
+          this.menu = index
+        },
+        // 停止时间
+        stopTime() {
+          if (this.user.isStop) {
+            this.setIntervalDate()
+          } else {
+            clearInterval(this.dateInterval)
+          }
+          this.user.isStop = !this.user.isStop
+        },
+        // 判断时间
+        judgeTime(time) {
+          let str = ""
+          if (time >= 6 && time < 14) {
+            str = "早上"
+          } else if (time >= 14 && time < 22) {
+            str = "下午"
+          } else if (time >= 22 || (time >= 0 && time < 6)) {
+            str = "晚上"
+          }
+          return str
+        },
+        // 更新数据
+        updateGame() {
+          let oldData = this.user
+          let user = {
+            name: oldData.name ? oldData.name : "云可",
+            money: oldData.money ? oldData.money : 0,
+            hp: oldData.hp ? oldData.hp : 100,
+            maxHp: oldData.maxHp ? oldData.maxHp : 100,
+            autoSave: oldData.autoSave ? oldData.autoSave : false,
+            isStop: oldData.isStop ? oldData.isStop : true,
+            items: oldData.items ? oldData.items : [], // 拥有道具
+            date: oldData.date ? oldData.date : 1,
+            time: oldData.time ? oldData.time : 8,
+            act: oldData.act ? oldData.act : [{ value: 0, on: false },
+            { value: 0, on: false },
+            { value: 0, on: false },
+            { value: 0, on: false }],
+            actLv: oldData.actLv ? oldData.actLv : [1, 1, 1, 1, 1],
+            version: this.version,
+          }
+          user.act.forEach((e) => {
+            e.on = false;
+          });
+          let index = Math.floor((user.time - 6) / 4)
+          user.act[index].on = true
+          this.user = user
+          saveGame(this.user, 1)
+          if (!this.user.isStop) {
+            this.setIntervalDate()
+          }
+        },
+        // 编辑自动存档
+        editAutoSave() {
+          let autoSave = this.user.autoSave
+          if (autoSave) {
+            this.user.autoSave = false
+          } else {
+            this.user.autoSave = true
+          }
+          saveGame(this.user)
+        },
+        // 编辑名字
+        editName() {
+          if (this.isEdit) {
+            this.isEdit = false
+          } else {
+            this.isEdit = true
+          }
+          if (this.user.autoSave) {
+            saveGame(this.user)
+          }
+        },
+        // 读取存档
+        loadGame() {
+          let str64 = localStorage.getItem("kumokoData")
+          if (str64) {
+            let data = window.atob(str64)
+            this.user = JSON.parse(decodeURIComponent(data))
+          }
+          if (this.user.version != this.version) {
+            this.updateGame()
+          } else {
+            if (!this.user.isStop) {
+              this.setIntervalDate()
+            }
+          }
+        },
+        // 行动逻辑
+        actFunction(index) {
+          let user = this.user
+          let act = user.act[index - 1]
+          let level = user.actLv[act.value]
+          switch (act.value) {
+            case 0:
+              addHp(15 + level * 5, this)
+              saveLog(`休息完了(体力+${(15 + level * 5)})`, this)
+              break;
+            case 1:
+              addHp(- (20 + level - 1), this)
+              addMoney(20 + (level + 1) * 10, this)
+              saveLog(`打工结束咯(体力-${(20 + level - 1)}，云币+${(20 + (level + 1) * 10)})`, this)
+              break;
+            case 2:
+              addHp(- (20 + level - 1), this)
+              saveLog(`探索结束咯(体力-${(20 + level)})`, this)
+              break;
+            case 3:
+              addHp(- (20 + level - 1), this)
+              saveLog(`钓鱼结束咯(体力-${(20 + level)})`, this)
+              break;
+            case 4:
+              addHp(- (20 + level - 1), this)
+              saveLog(`挖矿结束咯(体力-${(20 + level)})`, this)
+              break;
+            default:
+              break;
+          }
+          // if (user.hp <= 0) {
+          //   saveLog("负荷工作了，必须得休息了", this)
+          //   goToTomorrow(this)
+          // } else {
+          //   if (user.autoSave) {
+          //     saveGame(this.user)
+          //   }
+          // }
+        },
+        // 计算日期
+        setIntervalDate() {
+          let self = this
+          this.dateInterval = setInterval(function () {
+            let user = self.user
+            user.time = user.time + 1
+            if (user.time == 24) {
+              saveLog("一天又结束了，睡觉睡觉(体力+50)", self)
+              goToTomorrow(this)
+            } else if (user.time >= 6 && (user.time - 6) % 4 == 0 && user.time <= 21) { // 每4小时更换一次行动
+              let index = (user.time - 6) / 4
+              user.act.forEach((e) => {
+                e.on = false;
+              });
+              user.act[index].on = true;
+              if (index != 0) {
+                self.actFunction(index)
+              }
+            } else if (user.time > 21 && user.time < 24) {
+              if (user.time == 22) {
+                let index = (user.time - 6) / 4
+                self.actFunction(index)
+              }
+              user.act.forEach((e) => {
+                e.on = false;
+              });
+              if (user.autoSave) {
+                saveGame(self.user)
+              }
+            }
+          }, 5000)
+        },
+      },
+      mounted() {
+        this.loadGame()
+      },
+    })
+  </script>
+</body>
+
+</html>
