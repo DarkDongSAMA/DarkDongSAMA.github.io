@@ -13,14 +13,10 @@
       </div>
     </div>
     <div style="display: flex">
-      <div
-        v-for="(item, index) in actList"
-        :key="index"
-        @click="updateAct(index)"
-      >
+      <div v-for="(item, index) in actList" :key="index" @click="updateAct(index)">
         <button>{{ item }}</button>
       </div>
-      <button style="margin-left: 20px" @click="goToTomorrow">睡觉</button>
+      <button style="margin-left: 20px" @click="sleep">睡觉</button>
     </div>
     <div v-if="user.isStop">
       <div v-if="place == -1">
@@ -30,8 +26,9 @@
             v-for="(item, index) in placeList"
             :key="index"
             @click="changePlace(index)"
+            :disabled="user.date < item.lock"
           >
-            {{ item }}
+            {{ item.name }}
           </button>
         </div>
       </div>
@@ -39,25 +36,48 @@
         <button @click="changePlace(-1)">返回</button>
         <div>选择行动</div>
         <div style="display: flex">
-          <div
-            v-for="(item, index) in actList"
-            :key="index"
-            @click="changeMenu(index)"
-          >
+          <div v-for="(item, index) in actList" :key="index" @click="changeMenu(index)">
             <button>{{ item }}</button>
           </div>
         </div>
         <div v-if="menu == 0">
           <div>休息菜单</div>
-          <div></div>
+          <div>
+            <div
+              v-for="(item, index) in placeList[place].children[menu]"
+              :key="index"
+              @click="changeMenu(index)"
+            >
+              <button @click="doAction(item)">{{ item.name }}</button>
+              <span>{{ item.content }}</span>
+            </div>
+          </div>
         </div>
         <div v-if="menu == 1">
           <div>打工菜单</div>
-          <div></div>
+          <div>
+            <div
+              v-for="(item, index) in placeList[place].children[menu]"
+              :key="index"
+              @click="changeMenu(index)"
+            >
+              <button @click="doAction(item)">{{ item.name }}</button>
+              <span>{{ item.content }}</span>
+            </div>
+          </div>
         </div>
         <div v-if="menu == 2">
           <div>探索菜单</div>
-          <div></div>
+          <div>
+            <div
+              v-for="(item, index) in placeList[place].children[menu]"
+              :key="index"
+              @click="changeMenu(index)"
+            >
+              <button @click="doAction(item)">{{ item.name }}</button>
+              <span>{{ item.content }}</span>
+            </div>
+          </div>
         </div>
         <div v-if="menu == 3">钓鱼菜单</div>
         <div v-if="menu == 4">挖矿菜单</div>
@@ -65,8 +85,7 @@
     </div>
     <div style="margin-top: 20px">
       自动行动说明：<br />
-      休息：Lv.{{ user.actLv[0] }} (恢复
-      {{ 15 + user.actLv[0] * 5 }} 体力)<br />
+      休息：Lv.{{ user.actLv[0] }} (恢复 {{ 15 + user.actLv[0] * 5 }} 体力)<br />
       打工：Lv.{{ user.actLv[1] }} (消耗 {{ 20 + user.actLv[1] - 1 }} 体力，获得
       {{ 20 + (user.actLv[1] + 1) * 10 }} 云币)<br />
       探索：Lv.{{ user.actLv[2] }} (消耗
@@ -92,9 +111,13 @@ module.exports = {
     };
   },
   methods: {
-    // 跳过今天
-    goToTomorrow() {
-      this.$emit("on-jump-today");
+    // 睡觉
+    sleep() {
+      goToTomorrow(this);
+    },
+    // 操作
+    doAction(item) {
+      item.fun(this);
     },
     // 切换菜单
     changeMenu(index) {
@@ -113,7 +136,7 @@ module.exports = {
       let user = this.user;
       user.act[this.active].value = index;
       if (user.autoSave) {
-        saveGame(user);
+        saveGame();
       }
     },
   },

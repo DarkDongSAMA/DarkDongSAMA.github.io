@@ -41,7 +41,7 @@
     <div style="display: flex;">
       <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)">{{item}}</button>
     </div>
-    <baito :user="user" v-if="menu == 0" @on-jump-today="goToTomorrow"></baito>
+    <baito :user="user" v-if="menu == 0"></baito>
     <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
     <div style="height: 150px;overflow: auto;" v-if="showLog" ref="logBox">
       <div v-for="(item, index) in log" :key="index">{{item}}</div>
@@ -60,19 +60,8 @@
         menu: 0,
         dateInterval: null,
         showLog: false,
-        log: []
       },
       methods: {
-        // 更新日志
-        saveLog(str) {
-          this.log.push(str)
-          if (this.showLog) {
-            this.$nextTick(() => {
-              const box = this.$refs.logBox
-              box.scrollTop = box.scrollHeight
-            })
-          }
-        },
         // 显示日志
         showLogFunction() {
           this.showLog = !this.showLog
@@ -111,7 +100,7 @@
             hp: oldData.hp ? oldData.hp : 100,
             maxHp: oldData.maxHp ? oldData.maxHp : 100,
             autoSave: oldData.autoSave ? oldData.autoSave : false,
-            isStop: oldData.isStop ? oldData.isStop : false,
+            isStop: oldData.isStop ? oldData.isStop : true,
             items: oldData.items ? oldData.items : [], // 拥有道具
             date: oldData.date ? oldData.date : 1,
             time: oldData.time ? oldData.time : 8,
@@ -176,55 +165,37 @@
           let level = user.actLv[act.value]
           switch (act.value) {
             case 0:
-              user.hp = user.hp + (15 + level * 5) > user.maxHp ? user.maxHp : user.hp + (15 + level * 5)
-              this.saveLog(`休息完了(体力+${(15 + level * 5)})`)
+              addHp(15 + level * 5, this)
+              saveLog(`休息完了(体力+${(15 + level * 5)})`, this)
               break;
             case 1:
-              user.hp = user.hp - (20 + level - 1)
-              user.money = user.money + (20 + (level + 1) * 10)
-              this.saveLog(`打工结束咯(体力-${(20 + level - 1)}，云币+${(20 + (level + 1) * 10)})`)
+              addHp(- (20 + level - 1), this)
+              addMoney(20 + (level + 1) * 10, this)
+              saveLog(`打工结束咯(体力-${(20 + level - 1)}，云币+${(20 + (level + 1) * 10)})`, this)
               break;
             case 2:
-              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
-              this.saveLog(`探索结束咯(体力-${(20 + level)})`)
+              addHp(- (20 + level - 1), this)
+              saveLog(`探索结束咯(体力-${(20 + level)})`, this)
               break;
             case 3:
-              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
-              this.saveLog(`钓鱼结束咯(体力-${(20 + level)})`)
+              addHp(- (20 + level - 1), this)
+              saveLog(`钓鱼结束咯(体力-${(20 + level)})`, this)
               break;
             case 4:
-              user.hp = user.hp - (20 + level) < 0 ? 0 : user.hp - (20 + level)
-              this.saveLog(`挖矿结束咯(体力-${(20 + level)})`)
+              addHp(- (20 + level - 1), this)
+              saveLog(`挖矿结束咯(体力-${(20 + level)})`, this)
               break;
             default:
               break;
           }
-          if (user.hp <= 0) {
-            this.saveLog("负荷工作了，必须得休息了(体力+50)")
-            this.goToTomorrow()
-          } else {
-            if (user.autoSave) {
-              saveGame(user)
-            }
-          }
-        },
-        // 跳过今天
-        goToTomorrow() {
-          let user = this.user
-          user.time = 0
-          user.date = user.date + 1
-          user.hp = user.hp + 50 > user.maxHp ? user.maxHp : user.hp + 50
-          if (user.autoSave) {
-            saveGame(user)
-          }
-          clearInterval(this.dateInterval)
-          this.$nextTick(() => {
-            if (!user.isStop) {
-              this.setIntervalDate()
-            }
-          })
-          this.saveLog("睡觉睡觉(体力+50)")
-          this.saveLog(`第${user.date}天`)
+          // if (user.hp <= 0) {
+          //   saveLog("负荷工作了，必须得休息了", this)
+          //   goToTomorrow(this)
+          // } else {
+          //   if (user.autoSave) {
+          //     saveGame(this.user)
+          //   }
+          // }
         },
         // 计算日期
         setIntervalDate() {
@@ -233,8 +204,8 @@
             let user = self.user
             user.time = user.time + 1
             if (user.time == 24) {
-              self.saveLog("一天又结束了，睡觉睡觉(体力+50)")
-              self.goToTomorrow()
+              saveLog("一天又结束了，睡觉睡觉(体力+50)", self)
+              goToTomorrow(this)
             } else if (user.time >= 6 && (user.time - 6) % 4 == 0 && user.time <= 21) { // 每4小时更换一次行动
               let index = (user.time - 6) / 4
               user.act.forEach((e) => {
@@ -253,7 +224,7 @@
                 e.on = false;
               });
               if (user.autoSave) {
-                saveGame(user)
+                saveGame(self.user)
               }
             }
           }, 5000)
