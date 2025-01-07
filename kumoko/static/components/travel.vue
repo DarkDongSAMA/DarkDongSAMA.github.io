@@ -15,6 +15,7 @@
       </div>
     </div>
     <div v-else>
+      <div>{{ placeList[place].name }}</div>
       <button @click="changePlace(-1)">返回</button>
       <div>选择行动</div>
       <div style="display: flex">

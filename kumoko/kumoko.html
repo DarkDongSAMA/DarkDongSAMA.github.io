@@ -43,6 +43,7 @@
     </div>
     <baito :user="user" v-if="menu == 0"></baito>
     <travel :user="user" v-if="menu == 1"></travel>
+    <shop :user="user" v-if="menu == 4"></shop>
     <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
     <div style="height: 150px;overflow: auto;" v-if="showLog" ref="logBox">
       <div v-for="(item, index) in log" :key="index">{{item}}</div>
@@ -54,6 +55,7 @@
       components: {
         'baito': httpVueLoader('./static/components/baito.vue'),
         'travel': httpVueLoader('./static/components/travel.vue'),
+        'shop': httpVueLoader('./static/components/shop.vue'),
       },
       data: {
         user: {},

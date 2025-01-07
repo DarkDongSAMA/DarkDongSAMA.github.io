@@ -81,7 +81,13 @@ let addMoney = (money, vm) => {
   user.money = user.money + money
 }
 
-let itemList = [{ id: 1, name: "树枝" }];
+let typeList = ["垃圾", "材料"];
+let itemList = {
+  1: { name: ["树枝", "枯树枝", "光树枝"], rare: [1, 2, 3], type: 1 },
+  2: { name: ["木头", "魔木", "神木"], rare: [1, 2, 3], type: 1 },
+  3: { name: ["杂草", "毒草", "天草"], rare: [1, 2, 3], type: 1 },
+  4: { name: ["易拉罐"], rare: [0], type: 0 }
+};
 
 let areaList = [];
 
@@ -145,3 +151,5 @@ let placeList = [{
       }
     }]]
 }, { name: "天界", lock: 10 }];
+
+let shopList = ["商店", "柏青哥店"]
