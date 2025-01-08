@@ -2,14 +2,12 @@
   <div>
     <div v-for="(item, index) in user.items" :key="index">
       <span
-        >{{ itemList[item.id].name[item.rare == 0 ? 0 : item.rare - 1] }}({{
-          rareList[item.rare]
+        >{{ itemList[item.id].name[item.rare == 0 ? 0 : item.rare] }}({{
+          rareList[itemList[item.id].rare[item.rare]]
         }})</span
       >
       <span>x{{ item.num }}</span>
-      <span
-        >|出售价：{{ itemList[item.id].sell[item.rare == 0 ? 0 : item.rare - 1] }}</span
-      >
+      <span>|出售价：{{ itemList[item.id].sell[item.rare == 0 ? 0 : item.rare] }}</span>
       <button @click="sellItem(item)">出售</button>
     </div>
   </div>
@@ -26,7 +24,7 @@ module.exports = {
   methods: {
     // 出售
     sellItem(item) {
-      let sell = itemList[item.id].sell[item.rare == 0 ? 0 : item.rare - 1];
+      let sell = itemList[item.id].sell[item.rare == 0 ? 0 : item.rare];
       addMoney(sell, this);
       addItem(item.id, -1, item.rare, this);
     },

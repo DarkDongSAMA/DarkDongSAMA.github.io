@@ -58,6 +58,7 @@ let judgeHp = (hp, nowHp) => {
 // 跳过今天
 let goToTomorrow = (vm) => {
   let user = vm.user
+  let hour = 24 - user.time
   user.time = 0
   user.date = user.date + 1
   addHp(50, vm)
@@ -65,13 +66,14 @@ let goToTomorrow = (vm) => {
     saveGame(vm.user)
   }
   clearInterval(vm.dateInterval)
-  vm.$nextTick(() => {
-    if (!user.isStop) {
-      vm.setIntervalDate()
-    }
-  })
+  // vm.$nextTick(() => {
+  //   if (!user.isStop) {
+  //     vm.setIntervalDate()
+  //   }
+  // })
   saveLog("睡觉睡觉(体力+50)", vm)
   saveLog(`第${user.date}天`, vm)
+  updateFarmWater(hour, vm)
 };
 
 // 添加时间
@@ -83,8 +85,19 @@ let addTime = (time, vm) => {
     user.date = user.date + 1
     saveLog(`第${user.date}天`, vm)
   }
+  updateFarmWater(time, vm)
 }
-
+let updateFarmWater = (time, vm) => {
+  let user = vm.user
+  user.farm.forEach((e) => {
+    if (e.hasWater) {
+      e.time = e.time - time < 0 ? 0 : e.time - time
+    }
+    if (user.time == 0) {
+      e.hasWater = false
+    }
+  })
+}
 // 添加云币
 let addMoney = (money, vm) => {
   let user = vm.user
@@ -112,14 +125,15 @@ let addItem = (id, num, rare, vm) => {
   }
 }
 
-let typeList = ["垃圾", "材料", "种子"];
+let typeList = ["垃圾", "材料", "种子", "农作物"];
 let rareList = ["垃圾", "普通", "稀有"]
 let itemList = {
-  1: { name: ["树枝", "枯树枝", "光树枝"], sell: [3, 8, 30], rare: [1, 2, 3], type: 1 },
-  2: { name: ["木头", "魔木", "神木"], sell: [5, 20, 40], rare: [1, 2, 3], type: 1 },
-  3: { name: ["杂草", "毒草", "天草"], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
-  4: { name: ["易拉罐"], sell: [1], rare: [0], type: 0 },
-  5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2 }
+  1: { name: ["树枝", "枯树枝", "光树枝"], buy: [3, 8, 30], sell: [3, 8, 30], rare: [1, 2, 3], type: 1 },
+  2: { name: ["木头", "魔木", "神木"], buy: [5, 20, 40], sell: [5, 20, 40], rare: [1, 2, 3], type: 1 },
+  3: { name: ["杂草", "毒草", "天草"], sell: [2, 15, 45], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
+  4: { name: ["易拉罐"], buy: [1], sell: [1], rare: [0], type: 0 },
+  5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2, time: 72, loop: false, loopTime: 0, res: 6 },
+  6: { name: ["BT资源"], buy: [50], sell: [50], rare: [1], type: 3 }
 };
 
 let areaList = [];
@@ -152,9 +166,9 @@ let placeList = [{
       content: "距离村庄较远的树林，有时候会遇到探险中的小孩。",
       hp: 5,
       time: 1,
-      drop: [{ id: 2, rare: 1, per: 0.325 },
-      { id: 1, rare: 1, per: 0.05 },
-      { id: 3, rare: 1, per: 0.325 },
+      drop: [{ id: 2, rare: 0, per: 0.325 },
+      { id: 1, rare: 0, per: 0.05 },
+      { id: 3, rare: 0, per: 0.325 },
       { id: 4, rare: 0, per: 0.25 }],
     }]]
 }, {
@@ -186,7 +200,7 @@ let placeList = [{
 
 let shopList = ["商店", "柏青哥店"]
 
-let mallList = [{ id: 5, rare: 1 }]
+let mallList = [{ id: 5, rare: 0 }]
 
 // 查找概率最接近
 let maxPerFn = (num, arr) => {
@@ -215,3 +229,15 @@ let randomSelect = (arr) => {
   let idx = Math.floor(Math.random() * arr.length)
   return arr[idx]
 }
+
+// 判断农作物生长时间
+// let judgeGoodsTime = (data, user) => {
+//   if (data == 0) {
+//     return
+//   }
+//   let firDay = data.date
+//   let secDay = [user.date, user.time]
+//   let firMin = firDay[0] * 24 + firDay[1]
+//   let secMin = secDay[0] * 24 + secDay[1]
+//   return Math.abs(secMin - firMin)
+// }

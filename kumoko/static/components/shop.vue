@@ -13,13 +13,11 @@
       <div v-if="place == 0">
         <div v-for="(item, index) in mallList" :key="index">
           <span
-            >{{ itemList[item.id].name[item.rare == 0 ? 0 : item.rare - 1] }}({{
-              rareList[item.rare]
+            >{{ itemList[item.id].name[item.rare == 0 ? 0 : item.rare] }}({{
+              rareList[itemList[item.id].rare[item.rare]]
             }})</span
           >
-          <span
-            >|{{ itemList[item.id].buy[item.rare == 0 ? 0 : item.rare - 1] }} 云币</span
-          >
+          <span>|{{ itemList[item.id].buy[item.rare == 0 ? 0 : item.rare] }} 云币</span>
           <button @click="buyItem(index)">购买</button>
         </div>
       </div>
@@ -54,7 +52,7 @@ module.exports = {
     // 购买
     buyItem(index) {
       let item = mallList[index];
-      let buy = itemList[item.id].buy[item.rare == 0 ? 0 : item.rare - 1];
+      let buy = itemList[item.id].buy[item.rare == 0 ? 0 : item.rare];
       if (judgeMoney(buy, this)) {
         addMoney(-buy, this);
         addItem(item.id, 1, item.rare, this);

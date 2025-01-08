@@ -24,15 +24,13 @@
         </button>
       </div>
       <div>第 {{user.date}} 天 | {{user.time}} 点({{judgeTime(user.time)}})
-        <div style="display: flex;"><span v-if="user.isStop">时间已停止</span><button
-            @click="stopTime">{{user.isStop?'时间恢复流动':'时间停止'}}</button></div>
+        <!-- <div style="display: flex;"><span v-if="user.isStop">时间已停止</span><button @click="stopTime">{{user.isStop?'时间恢复流动':'时间停止'}}</button></div>
         <div>Tips:时间停止后，行动一次消耗一小时或以上</div>
-        <div style="color: red;">强烈推荐时间停止！</div>
+        <div style="color: red;">强烈推荐时间停止！</div> -->
       </div>
       <div>云币：{{ user.money }}</div>
       <div>体力：{{ user.hp }}/{{user.maxHp}}</div>
-      <div style="display: flex;">今日行动安排：<div v-for="(item, index) in user.act" :key="index"
-          :style="item.on?'color:blue':''">|{{actList[item.value]}}<span v-if="item.on">中</span>|</div>
+      <div style="display: flex;">今日行动安排：<div v-for="(item, index) in user.act" :key="index" :style="item.on?'color:blue':''">|{{actList[item.value]}}<span v-if="item.on">中</span>|</div>
       </div>
       <div>
         自动存档：{{ user.autoSave ? "已开启" : "未开启"
@@ -41,11 +39,12 @@
       <button @click="saveGame(user)">存档</button><button>导出存档</button><button>导入存档</button>
     </div>
     <div style="display: flex;">
-      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)"
-        :disabled="index == 1 && !user.isStop">{{item}}</button>
+      <!-- <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)" :disabled="index == 1 && !user.isStop">{{item}}</button> -->
+      <button v-for="(item, index) in menuList" :key="index" @click="changeMenu(index)">{{item}}</button>
     </div>
     <baito :user="user" v-if="menu == 0"></baito>
     <travel :user="user" v-if="menu == 1"></travel>
+    <farm :user="user" v-if="menu == 2"></farm>
     <shop :user="user" v-if="menu == 4"></shop>
     <item :user="user" v-if="menu == 5"></item>
     <button @click="showLogFunction">{{showLog?'隐藏':'显示'}}日志</button>
@@ -59,6 +58,7 @@
       components: {
         'baito': httpVueLoader('./static/components/baito.vue'),
         'travel': httpVueLoader('./static/components/travel.vue'),
+        'farm': httpVueLoader('./static/components/farm.vue'),
         'shop': httpVueLoader('./static/components/shop.vue'),
         'item': httpVueLoader('./static/components/item.vue'),
       },
@@ -118,6 +118,7 @@
             { value: 0, on: false },
             { value: 0, on: false }],
             actLv: oldData.actLv ? oldData.actLv : [1, 1, 1, 1, 1],
+            farm: oldData.farm ? oldData.farm : [],
             version: this.version,
           }
           user.act.forEach((e) => {
@@ -127,9 +128,9 @@
           user.act[index].on = true
           this.user = user
           saveGame(this.user, 1)
-          if (!this.user.isStop) {
-            this.setIntervalDate()
-          }
+          // if (!this.user.isStop) {
+          //   this.setIntervalDate()
+          // }
         },
         // 编辑自动存档
         editAutoSave() {
@@ -162,9 +163,9 @@
           if (this.user.version != this.version) {
             this.updateGame()
           } else {
-            if (!this.user.isStop) {
-              this.setIntervalDate()
-            }
+            // if (!this.user.isStop) {
+            //   this.setIntervalDate()
+            // }
           }
         },
         // 行动逻辑

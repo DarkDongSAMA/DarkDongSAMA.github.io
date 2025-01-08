@@ -49,8 +49,8 @@
             <span>{{ item.content }}(消耗体力:{{ item.hp }})</span>
             <div>
               掉落物：<span v-for="(itemD, indexD) in item.drop" :key="indexD"
-                >|{{ itemList[itemD.id].name[itemD.rare == 0 ? 0 : itemD.rare - 1] }}({{
-                  rareList[itemD.rare]
+                >|{{ itemList[itemD.id].name[itemD.rare == 0 ? 0 : itemD.rare] }}({{
+                  rareList[itemList[itemD.id].rare[itemD.rare]]
                 }})|</span
               >
             </div>
@@ -105,8 +105,8 @@ module.exports = {
         logStr += "，获得了";
         result.forEach((e) => {
           addItem(e.id, e.num, e.rare, this);
-          logStr += `|${itemList[e.id].name[e.rare == 0 ? 0 : e.rare - 1]}(${
-            rareList[e.rare]
+          logStr += `|${itemList[e.id].name[e.rare == 0 ? 0 : e.rare]}(${
+            rareList[itemList[e.id].rare[e.rare]]
           })x${e.num}|`;
         });
       }
