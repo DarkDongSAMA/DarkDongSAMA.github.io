@@ -1,10 +1,16 @@
 <template>
   <div>
     <div v-for="(item, index) in user.items" :key="index">
-      <span>{{ itemList[item.id].name[item.rare] }}</span>
+      <span
+        >{{ itemList[item.id].name[item.rare == 0 ? 0 : item.rare - 1] }}({{
+          rareList[item.rare]
+        }})</span
+      >
       <span>x{{ item.num }}</span>
-      <span>|出售价：{{ itemList[item.id].sell[item.rare] }}</span>
-      <button @click="sellItem(index)">出售</button>
+      <span
+        >|出售价：{{ itemList[item.id].sell[item.rare == 0 ? 0 : item.rare - 1] }}</span
+      >
+      <button @click="sellItem(item)">出售</button>
     </div>
   </div>
 </template>
@@ -19,9 +25,8 @@ module.exports = {
   },
   methods: {
     // 出售
-    sellItem(index) {
-      let item = mallList[index];
-      let sell = itemList[item.id].sell[item.rare];
+    sellItem(item) {
+      let sell = itemList[item.id].sell[item.rare == 0 ? 0 : item.rare - 1];
       addMoney(sell, this);
       addItem(item.id, -1, item.rare, this);
     },

@@ -113,12 +113,13 @@ let addItem = (id, num, rare, vm) => {
 }
 
 let typeList = ["垃圾", "材料", "种子"];
+let rareList = ["垃圾", "普通", "稀有"]
 let itemList = {
-  1: { name: ["树枝", "枯树枝", "光树枝"], rare: [1, 2, 3], type: 1 },
-  2: { name: ["木头", "魔木", "神木"], rare: [1, 2, 3], type: 1 },
-  3: { name: ["杂草", "毒草", "天草"], rare: [1, 2, 3], type: 1 },
-  4: { name: ["易拉罐"], rare: [0], type: 0 },
-  5: { name: ["BT种子"], buy: [10], sell: [5], rare: [0], type: 2 }
+  1: { name: ["树枝", "枯树枝", "光树枝"], sell: [3, 8, 30], rare: [1, 2, 3], type: 1 },
+  2: { name: ["木头", "魔木", "神木"], sell: [5, 20, 40], rare: [1, 2, 3], type: 1 },
+  3: { name: ["杂草", "毒草", "天草"], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
+  4: { name: ["易拉罐"], sell: [1], rare: [0], type: 0 },
+  5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2 }
 };
 
 let areaList = [];
@@ -149,13 +150,12 @@ let placeList = [{
     }], [{
       name: "无人森林",
       content: "距离村庄较远的树林，有时候会遇到探险中的小孩。",
-      fun: function (vm) {
-        if (judgeHp(10, vm.user.hp)) {
-          addHp(-10, vm)
-          addTime(1, vm)
-          saveLog(`探索了一下`, vm)
-        }
-      }
+      hp: 5,
+      time: 1,
+      drop: [{ id: 2, rare: 1, per: 0.325 },
+      { id: 1, rare: 1, per: 0.05 },
+      { id: 3, rare: 1, per: 0.325 },
+      { id: 4, rare: 0, per: 0.25 }],
     }]]
 }, {
   name: "魔界",
@@ -186,5 +186,32 @@ let placeList = [{
 
 let shopList = ["商店", "柏青哥店"]
 
-let mallList = [{ id: 5, rare: 0 }]
+let mallList = [{ id: 5, rare: 1 }]
 
+// 查找概率最接近
+let maxPerFn = (num, arr) => {
+  let list = []
+  arr.forEach((e) => {
+    if (num <= e.per) {
+      list.push(e)
+    }
+  })
+  list.sort(function (a, b) { return a.per - b.per })
+  let result = list[0]
+  if (result) {
+    let filterList = list.filter((e) => {
+      return e.per === result.per
+    })
+    if (filterList.length > 1) {
+      result = randomSelect(filterList)
+    }
+    return result
+  } else {
+    return null
+  }
+}
+
+let randomSelect = (arr) => {
+  let idx = Math.floor(Math.random() * arr.length)
+  return arr[idx]
+}
