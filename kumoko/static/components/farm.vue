@@ -73,8 +73,14 @@ module.exports = {
             addItem(item.res, num, rare, this);
             this.user.farm.splice(index, 1);
             this.$set(this.farmTable[fIdx], cIdx, 0);
+            if (judgeHp(1, this.user.hp)) {
+              addHp(-1, this);
+            }
           } else {
             field.hasWater = true;
+            if (judgeHp(1, this.user.hp)) {
+              addHp(-1, this);
+            }
           }
         }
       } else {
@@ -89,12 +95,17 @@ module.exports = {
         addItem(id, -1, this.seedList[this.selectedSeed].rare, this);
         this.$set(this.farmTable[fIdx], cIdx, detail);
         this.user.farm.push(detail);
+        if (judgeHp(1, this.user.hp)) {
+          addHp(-1, this);
+        }
         let seedIndex = this.seedList.findIndex((e) => {
           return e.id == id;
         });
         if (seedIndex > -1) {
-          this.seedList.splice(seedIndex, 1);
-          this.selectedSeed = null;
+          if (this.seedList[seedIndex].num <= 0) {
+            this.seedList.splice(seedIndex, 1);
+            this.selectedSeed = null;
+          }
         }
       }
     },

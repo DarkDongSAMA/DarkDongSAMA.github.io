@@ -124,7 +124,7 @@
           user.act.forEach((e) => {
             e.on = false;
           });
-          let index = Math.floor((user.time - 6) / 4)
+          let index = Math.abs(Math.floor((user.time - 6) / 4))
           user.act[index].on = true
           this.user = user
           saveGame(this.user, 1)
