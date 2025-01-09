@@ -56,9 +56,9 @@ module.exports = {
     updateAct(index) {
       let user = this.user;
       user.act[this.active].value = index;
-      if (user.autoSave) {
-        saveGame();
-      }
+      // if (user.autoSave) {
+      //   saveGame();
+      // }
     },
   },
 };

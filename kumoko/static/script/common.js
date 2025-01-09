@@ -1,4 +1,4 @@
-let menuList = ["行动", "出行", "农场", "牧场", "商店", "道具"];
+let menuList = ["战斗", "出行", "农场", "牧场", "商店", "道具"];
 
 let actList = ["休息", "打工", "探索", "钓鱼", "挖矿"];
 
@@ -62,9 +62,9 @@ let goToTomorrow = (vm) => {
   user.time = 0
   user.date = user.date + 1
   addHp(50, vm)
-  if (user.autoSave) {
-    saveGame(vm.user)
-  }
+  // if (user.autoSave) {
+  //   saveGame(vm.user)
+  // }
   clearInterval(vm.dateInterval)
   // vm.$nextTick(() => {
   //   if (!user.isStop) {
@@ -125,15 +125,16 @@ let addItem = (id, num, rare, vm) => {
   }
 }
 
-let typeList = ["垃圾", "材料", "种子", "农作物"];
+let typeList = ["垃圾", "材料", "种子", "农作物", "掉落"];
 let rareList = ["垃圾", "普通", "稀有"]
 let itemList = {
   1: { name: ["树枝", "枯树枝", "光树枝"], buy: [3, 8, 30], sell: [3, 8, 30], rare: [1, 2, 3], type: 1 },
   2: { name: ["木头", "魔木", "神木"], buy: [5, 20, 40], sell: [5, 20, 40], rare: [1, 2, 3], type: 1 },
-  3: { name: ["杂草", "毒草", "天草"], sell: [2, 15, 45], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
+  3: { name: ["杂草", "毒草", "天草"], buy: [2, 15, 45], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
   4: { name: ["易拉罐"], buy: [1], sell: [1], rare: [0], type: 0 },
   5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2, time: 72, loop: false, loopTime: 0, res: 6, num: 3 },
-  6: { name: ["BT资源"], buy: [20], sell: [20], rare: [1], type: 3 }
+  6: { name: ["BT资源"], buy: [20], sell: [20], rare: [1], type: 3 },
+  7: { name: ["史莱姆球"], buy: [15], sell: [15], rare: [1], type: 4 },
 };
 
 let areaList = [];
@@ -241,3 +242,24 @@ let randomSelect = (arr) => {
 //   let secMin = secDay[0] * 24 + secDay[1]
 //   return Math.abs(secMin - firMin)
 // }
+
+let battleTypeList = {
+  1: { name: "水", effective: [2], resist: [3], invalid: [] },
+  2: { name: "火", effective: [3], resist: [1], invalid: [] },
+  3: { name: "木", effective: [1], resist: [2], invalid: [] },
+  4: { name: "光", effective: [5], resist: [5], invalid: [] },
+  5: { name: "暗", effective: [4], resist: [4], invalid: [6] },
+  6: { name: "普", effective: [], resist: [], invalid: [5] },
+}
+
+let monster = {
+  1: { name: "史莱姆", hp: 15, atk: 5, def: 2, skill: 0, type: 1, exp: 8, drop: [{ id: 7, per: 0.5 }] }
+}
+
+let skillList = {
+  1: {
+    name: "光球", type: 4, rate: 0.95, effect: {
+      atk: 0.2
+    }
+  }
+}

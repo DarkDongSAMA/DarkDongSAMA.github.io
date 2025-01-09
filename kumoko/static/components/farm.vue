@@ -32,7 +32,7 @@
 </template>
 <script>
 module.exports = {
-  name: "travelPage",
+  name: "farmPage",
   props: {
     user: Object,
   },
@@ -95,8 +95,8 @@ module.exports = {
         addItem(id, -1, this.seedList[this.selectedSeed].rare, this);
         this.$set(this.farmTable[fIdx], cIdx, detail);
         this.user.farm.push(detail);
-        if (judgeHp(1, this.user.hp)) {
-          addHp(-1, this);
+        if (judgeHp(2, this.user.hp)) {
+          addHp(-2, this);
         }
         let seedIndex = this.seedList.findIndex((e) => {
           return e.id == id;
