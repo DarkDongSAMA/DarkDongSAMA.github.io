@@ -10,7 +10,9 @@
       <div>幸运:{{ user.battle.lucky }}</div>
       <div>
         技能:<span v-for="(item, index) in user.battle.skill" :key="index"
-          >|{{ skillList[item].name }}|</span
+          >|{{ skillList[item].name }}({{
+            battleTypeList[skillList[item].type].name
+          }})|</span
         >
       </div>
       <div>装备:{{ user.battle.wear }}</div>
@@ -28,7 +30,10 @@
       <div>
         {{ monsterList[selectBattle].name }} Lv.{{ monsterList[selectBattle].lv }} ({{
           monsterList[selectBattle].hp < 0 ? 0 : monsterList[selectBattle].hp
-        }}/{{ monster[monsterList[selectBattle].id].hp }})
+        }}/{{
+          monster[monsterList[selectBattle].id].hp +
+          monster[monsterList[selectBattle].id].grow * (monsterList[selectBattle].lv - 1)
+        }})
       </div>
       <div style="width: 200px; display: flex; justify-content: space-between">
         <div>{{ monsterList[selectBattle].name }}</div>
@@ -74,7 +79,11 @@ module.exports = {
         if (effect.atk) {
           let enemy = this.monsterList[this.selectBattle];
           let user = this.user.battle;
-          let damage = user.atk + user.atk * effect.atk;
+          let randomRate =
+            Math.random() *
+            (battleAtkMax + battleAtkMax - (battleAtkMin + battleAtkMax) + 1);
+          randomRate = randomRate - battleAtkMax;
+          let damage = user.atk + randomRate;
           enemy.hp = enemy.hp - damage;
           this.battleLog.push(
             `${this.user.name}使用了${skillDetail.name}，${enemy.name}受到${damage}点伤害`
@@ -101,9 +110,13 @@ module.exports = {
     playerAttack() {
       let enemy = this.monsterList[this.selectBattle];
       let user = this.user.battle;
-      enemy.hp = enemy.hp - user.atk;
+      let randomRate =
+        Math.random() * (battleAtkMax + battleAtkMax - (battleAtkMin + battleAtkMax) + 1);
+      randomRate = randomRate - battleAtkMax;
+      let damage = user.atk + randomRate;
+      enemy.hp = enemy.hp - damage;
       this.battleLog.push(
-        `${this.user.name}发起了攻击，${enemy.name}受到${user.atk}点伤害`
+        `${this.user.name}发起了攻击，${enemy.name}受到${damage}点伤害`
       );
       this.judgeWin(enemy);
     },
@@ -134,6 +147,9 @@ module.exports = {
         let lv = Math.floor(Math.random() * 3) + 1;
         m.lv = lv;
         m.id = 1;
+        m.hp = m.grow * (lv - 1) + m.hp;
+        m.atk = m.grow * (lv - 1) + m.atk;
+        m.def = m.grow * (lv - 1) + m.def;
         list.push(m);
       }
     }

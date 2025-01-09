@@ -255,7 +255,7 @@ let battleTypeList = {
 }
 
 let monster = {
-  1: { name: "史莱姆", hp: 15, atk: 5, def: 2, skill: 0, type: 1, exp: 8, drop: [{ id: 7, per: 0.5 }] }
+  1: { name: "史莱姆", hp: 15, atk: 5, def: 2, skill: 0, type: 1, exp: 8, grow: 0.8, drop: [{ id: 7, per: 0.5 }] }
 }
 
 let skillList = {
@@ -265,3 +265,6 @@ let skillList = {
     }
   }
 }
+
+let battleAtkMax = 0.2
+let battleAtkMin = -0.2
