@@ -117,7 +117,7 @@ let addItem = (id, num, rare, vm) => {
       rare: rare,
       num: num
     })
-  } else {
+  } else if (itemIndex != -1) {
     userItem[itemIndex].num = userItem[itemIndex].num + num
     if (userItem[itemIndex].num <= 0) {
       userItem.splice(itemIndex, 1)
@@ -132,8 +132,8 @@ let itemList = {
   2: { name: ["木头", "魔木", "神木"], buy: [5, 20, 40], sell: [5, 20, 40], rare: [1, 2, 3], type: 1 },
   3: { name: ["杂草", "毒草", "天草"], sell: [2, 15, 45], sell: [2, 15, 45], rare: [1, 2, 3], type: 1 },
   4: { name: ["易拉罐"], buy: [1], sell: [1], rare: [0], type: 0 },
-  5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2, time: 72, loop: false, loopTime: 0, res: 6 },
-  6: { name: ["BT资源"], buy: [50], sell: [50], rare: [1], type: 3 }
+  5: { name: ["BT种子"], buy: [10], sell: [9], rare: [1], type: 2, time: 72, loop: false, loopTime: 0, res: 6, num: 3 },
+  6: { name: ["BT资源"], buy: [20], sell: [20], rare: [1], type: 3 }
 };
 
 let areaList = [];

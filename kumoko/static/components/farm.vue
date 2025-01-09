@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div style="color: red">Tips:每日浇水农作物才会生长</div>
     <div style="display: flex">
       <div
         v-for="(item, index) in seedList"
@@ -65,8 +66,13 @@ module.exports = {
         });
         let field = this.user.farm[index];
         if (index > -1) {
-          if (field <= 0) {
-            // let item = 
+          if (field.time <= 0) {
+            let item = itemList[field.seed];
+            let rare = field.rare;
+            let num = item.num; // 作物生产的数量
+            addItem(item.res, num, rare, this);
+            this.user.farm.splice(index, 1);
+            this.$set(this.farmTable[fIdx], cIdx, 0);
           } else {
             field.hasWater = true;
           }
@@ -80,8 +86,16 @@ module.exports = {
           hasWater: false,
           time: itemList[id].time,
         };
+        addItem(id, -1, this.seedList[this.selectedSeed].rare, this);
         this.$set(this.farmTable[fIdx], cIdx, detail);
         this.user.farm.push(detail);
+        let seedIndex = this.seedList.findIndex((e) => {
+          return e.id == id;
+        });
+        if (seedIndex > -1) {
+          this.seedList.splice(seedIndex, 1);
+          this.selectedSeed = null;
+        }
       }
     },
     // 选择种子
