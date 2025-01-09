@@ -31,6 +31,7 @@ let addHp = (hp, vm) => {
     user.hp = user.hp + hp < 0 ? 0 : user.hp + hp
   }
   if (user.hp <= 0) {
+    alert("负荷工作了，必须得休息了")
     saveLog("负荷工作了，必须得休息了", vm)
     goToTomorrow(vm)
   }
@@ -167,10 +168,11 @@ let placeList = [{
       content: "距离村庄较远的树林，有时候会遇到探险中的小孩。",
       hp: 5,
       time: 1,
-      drop: [{ id: 2, rare: 0, per: 0.325 },
+      drop: [{ id: 2, rare: 0, per: 0.3 },
+      { id: 5, rare: 0, per: 0.1 },
       { id: 1, rare: 0, per: 0.05 },
-      { id: 3, rare: 0, per: 0.325 },
-      { id: 4, rare: 0, per: 0.25 }],
+      { id: 3, rare: 0, per: 0.3 },
+      { id: 4, rare: 0, per: 0.2 }],
     }]]
 }, {
   name: "魔界",
