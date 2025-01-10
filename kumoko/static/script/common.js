@@ -205,7 +205,10 @@ let placeList = [{
         }
       }
     }]]
-}, { name: "天界", lock: 10 }];
+}, {
+  name: "天界", lock: 10,
+  children: [[]]
+}];
 
 let shopList = ["商店", "柏青哥店"]
 
