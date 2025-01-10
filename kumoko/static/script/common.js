@@ -63,6 +63,8 @@ let goToTomorrow = (vm) => {
   user.time = 0
   user.date = user.date + 1
   addHp(50, vm)
+  user.battle.hp = user.battle.maxHp
+  user.battle.mp = user.battle.maxMp
   // if (user.autoSave) {
   //   saveGame(vm.user)
   // }
@@ -150,6 +152,8 @@ let placeList = [{
       fun: function (vm) {
         addHp(30, vm)
         addTime(2, vm)
+        vm.user.battle.hp = vm.user.battle.maxHp
+        vm.user.battle.mp = vm.user.battle.maxMp
         saveLog(`泡温泉休息一下(体力+30)`, vm)
       }
     }], [{
@@ -185,6 +189,8 @@ let placeList = [{
         addHp(45, vm)
         addMoney(-30, vm)
         addTime(2, vm)
+        vm.user.battle.hp = vm.user.battle.maxHp
+        vm.user.battle.mp = vm.user.battle.maxMp
         saveLog(`泡澡休息一下(体力+45，云币-30)`, vm)
       }
     }], [{
@@ -251,20 +257,20 @@ let battleTypeList = {
   3: { name: "木", effective: [1], resist: [2], invalid: [] },
   4: { name: "光", effective: [5], resist: [5], invalid: [] },
   5: { name: "暗", effective: [4], resist: [4], invalid: [6] },
-  6: { name: "普", effective: [], resist: [], invalid: [5] },
+  6: { name: "无", effective: [], resist: [], invalid: [5] },
 }
 
 let monster = {
-  1: { name: "史莱姆", hp: 15, atk: 5, def: 2, skill: 0, type: 1, exp: 8, grow: 0.8, drop: [{ id: 7, per: 0.5 }] }
+  1: { name: "史莱姆", hp: 15, atk: 5, lucky: 1, def: 2, skill: 0, type: 1, exp: 8, grow: 0.8, drop: [{ id: 7, rare: 0, per: 0.5 }] }
 }
 
 let skillList = {
   1: {
-    name: "光球", type: 4, rate: 0.95, effect: {
+    name: "光球", type: 4, rate: 0.95, mp: 5, effect: {
       atk: 0.2
     }
   }
 }
 
-let battleAtkMax = 0.2
-let battleAtkMin = -0.2
+let battleAtkPer = 0.15 // 攻击补正
+let scDamage = 1.5 // 暴击上海加成
