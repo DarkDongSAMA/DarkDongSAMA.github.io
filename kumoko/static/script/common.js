@@ -276,4 +276,46 @@ let skillList = {
 }
 
 let battleAtkPer = 0.15 // 攻击补正
-let scDamage = 1.5 // 暴击上海加成
+let scDamage = 1.5 // 暴击伤害加成
+
+// 升级
+let levelInfo = {
+  1: 0,
+  2: 15,
+  // 3: 35,
+  // 4: 75,
+  // 5: 155
+}
+
+let levelCaculate = (addExp, user) => {
+  let level = user.lv
+  let nextExp = levelInfo[level + 1]
+  if (!nextExp) {
+    return false
+  }
+  let exp = user.exp + addExp
+  if (nextExp - exp <= 0) { // 升级
+    level = level + 1
+    exp = Math.abs(nextExp - exp)
+    user.lv = level
+    user.exp = exp
+
+    user.maxHp = user.maxHp + 5
+    user.maxMp = user.maxMp + 5
+    user.atk = user.atk + 3
+    user.def = user.def + 3
+    user.lucky = user.lucky + 1
+    return true
+  }
+  return false
+}
+
+// 计算经验值获取
+let expCaculate = (exp, lv, elv) => {
+  let nextExp = levelInfo[lv + 1]
+  if (!nextExp) {
+    return 0
+  }
+  let lastExp = exp * elv / lv
+  return Math.round(lastExp)
+}

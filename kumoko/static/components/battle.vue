@@ -2,7 +2,7 @@
   <div>
     <div>
       <div>LV.{{ user.battle.lv }}</div>
-      <div>EXP:{{ user.battle.exp }}</div>
+      <div>EXP:{{ user.battle.exp }} / {{ levelInfo[user.battle.lv + 1] }}</div>
       <div style="display: flex; align-items: center">
         HP: {{ Math.round(user.battle.hp) }} / {{ user.battle.maxHp }}
         <div class="hpBorder">
@@ -157,6 +157,18 @@ module.exports = {
     judgeWin(enemy) {
       if (enemy.hp <= 0) {
         this.battleLog.push(`战斗胜利！`);
+        let exp = expCaculate(enemy.exp, this.user.battle.lv, enemy.lv);
+        this.battleLog.push(`获得 ${exp} 点经验`);
+        let isLevelUp = levelCaculate(exp, this.user.battle);
+        if (isLevelUp) {
+          let user = this.user.battle;
+          this.battleLog.push(`升级了！`);
+          this.battleLog.push(`hp => ${user.maxHp}`);
+          this.battleLog.push(`mp => ${user.maxMp}`);
+          this.battleLog.push(`攻击 => ${user.atk}`);
+          this.battleLog.push(`防御 => ${user.def}`);
+          this.battleLog.push(`幸运 => ${user.lucky}`);
+        }
         if (enemy.drop.length > 0) {
           let randomNum = Math.random() * 1;
           let prize = maxPerFn(randomNum, enemy.drop);
@@ -173,7 +185,7 @@ module.exports = {
           self.monsterList.splice(self.selectBattle, 1);
           self.selectBattle = null;
           self.inBattle = false;
-        }, 1000);
+        }, 2000);
       } else {
         this.enemyAttack();
       }
@@ -290,7 +302,7 @@ module.exports = {
           m.maxHp = m.hp;
           m.atk = m.grow * (lv - 1) + m.atk;
           m.def = m.grow * (lv - 1) + m.def;
-          m.exp = m.grow * (lv - 1) + m.exp;
+          m.exp = m.exp;
           m.lucky = m.grow * (lv - 1) + m.lucky;
           list.push(m);
         }
