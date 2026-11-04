@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070a12">
+  <title>纯色连连看 · 人机对战</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="ambient ambient-c" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <span class="brand-copy">
+          <strong>纯色连连看</strong>
+          <small>COLOR LINK</small>
+        </span>
+      </div>
+      <div class="top-actions">
+        <span class="mode-pill"><i></i>人机对战</span>
+        <button class="text-btn" id="helpBtn" type="button">玩法</button>
+        <button class="text-btn" id="pauseBtn" type="button" disabled>暂停</button>
+      </div>
+    </header>
+
+    <main class="game">
+      <section class="hud" aria-label="对战计分板">
+        <div class="fighter fighter--player" id="playerCard">
+          <div class="avatar avatar--player" aria-hidden="true">你</div>
+          <div class="fighter-meta">
+            <span class="fighter-name">玩家</span>
+            <span class="score-line"><strong class="score" id="playerScore">0</strong><span class="unit">对</span></span>
+          </div>
+        </div>
+
+        <div class="clock" aria-label="剩余时间">
+          <div class="clock-main">
+            <span class="clock-time" id="timer">01:00</span>
+            <span class="clock-label">剩余时间</span>
+          </div>
+          <div class="clock-bottom">
+            <span>场上 <b id="remaining">40</b> 对</span>
+            <span class="clock-track" aria-hidden="true"><i id="timerBar"></i></span>
+          </div>
+        </div>
+
+        <div class="fighter fighter--ai" id="aiCard">
+          <div class="avatar avatar--ai" aria-hidden="true">AI</div>
+          <div class="fighter-meta">
+            <span class="fighter-name">电脑</span>
+            <span class="score-line"><strong class="score" id="aiScore">0</strong><span class="unit">对</span></span>
+          </div>
+          <span class="ai-progress" aria-hidden="true"><i id="aiProgress"></i></span>
+        </div>
+      </section>
+
+      <section class="board-panel" aria-label="连连看棋盘">
+        <div class="board-topline">
+          <span>匹配区</span>
+          <span>同色 · 最多 2 个转弯</span>
+        </div>
+
+        <div class="board" id="board">
+          <div class="tile-layer" id="tileLayer"></div>
+          <svg class="path-layer" id="pathLayer" aria-hidden="true"></svg>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        </div>
+
+        <div class="board-bottom">
+          <div class="board-status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText">点击两个同色色块，把它们连起来</span>
+          </div>
+          <button class="hint-btn" id="hintBtn" type="button" disabled>
+            <span>提示</span><kbd>H</kbd>
+          </button>
+        </div>
+      </section>
+
+      <footer class="footnote">
+        <span class="footnote-rule" aria-hidden="true"></span>
+        60 秒限时 · 电脑会同时抢消除 · 无解时自动重排
+      </footer>
+    </main>
+  </div>
+
+  <!-- 开始 -->
+  <div class="overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="modal start-modal">
+      <div class="eyebrow"><span></span>COLOR MATCH · 1 VS 1</div>
+      <div class="logo-tiles" aria-hidden="true">
+        <i style="--c:#ff5a5f;--r:-8deg"></i>
+        <i style="--c:#ffd60a;--r:6deg"></i>
+        <i style="--c:#2ecc71;--r:-5deg"></i>
+        <i style="--c:#4f7cff;--r:9deg"></i>
+      </div>
+      <h1 id="startTitle">纯色连连看</h1>
+      <p class="start-lead">和电脑抢时间，用最多两次转弯的线连接同色色块。</p>
+
+      <div class="rule-strip" aria-label="游戏规则">
+        <span><b>①</b> 同色配对</span>
+        <span><b>②</b> 最多两弯</span>
+        <span><b>③</b> 限时抢分</span>
+      </div>
+
+      <div class="difficulty-block">
+        <div class="difficulty-head">
+          <span>电脑难度</span>
+          <small>每档只改变电脑出手速度</small>
+        </div>
+        <div class="segmented" id="difficultyGroup" role="group" aria-label="选择电脑难度">
+          <button type="button" data-difficulty="easy">
+            <strong>轻松</strong><span>4.4 秒 / 手</span>
+          </button>
+          <button type="button" data-difficulty="normal" class="is-active" aria-pressed="true">
+            <strong>标准</strong><span>3.0 秒 / 手</span>
+          </button>
+          <button type="button" data-difficulty="hard">
+            <strong>挑战</strong><span>1.9 秒 / 手</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="primary-btn start-btn" id="startBtn" type="button">
+        <span>开始对战</span><span class="btn-arrow" aria-hidden="true">→</span>
+      </button>
+      <p class="start-note">点击色块操作 · 按 <kbd>H</kbd> 获取提示 · 按 <kbd>P</kbd> 暂停</p>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <div class="overlay" id="pauseOverlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+    <div class="modal pause-modal">
+      <div class="pause-mark" aria-hidden="true"><i></i><i></i></div>
+      <div class="eyebrow eyebrow--center"><span></span>PAUSED<span></span></div>
+      <h2 id="pauseTitle">对战暂停</h2>
+      <p>计时与电脑都已暂停，准备好再继续。</p>
+      <button class="primary-btn" id="resumeBtn" type="button">继续游戏</button>
+      <button class="ghost-btn" id="pauseRestartBtn" type="button">重新开始本局</button>
+    </div>
+  </div>
+
+  <!-- 玩法 -->
+  <div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="modal help-modal">
+      <button class="close-btn" id="helpCloseBtn" type="button" aria-label="关闭玩法说明">×</button>
+      <div class="eyebrow"><span></span>HOW TO PLAY</div>
+      <h2 id="helpTitle">怎么玩</h2>
+      <ol class="help-list">
+        <li><b>选择同色</b><span>依次点击两个颜色相同的色块。</span></li>
+        <li><b>连起来</b><span>连接路线只能水平或垂直，最多转弯 2 次，也可以从棋盘边缘外绕行。</span></li>
+        <li><b>抢在电脑前</b><span>你和电脑同时消除。60 秒后，消除对数更多的一方获胜。</span></li>
+        <li><b>别担心卡住</b><span>场上没有可消除组合时会自动重排；按 H 可以让一对可消除的色块闪动提示。</span></li>
+      </ol>
+      <button class="primary-btn" id="helpOkBtn" type="button">明白了</button>
+    </div>
+  </div>
+
+  <!-- 结算 -->
+  <div class="overlay" id="endOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="modal end-modal" id="endModal">
+      <div class="result-badge" id="resultBadge" aria-hidden="true">胜</div>
+      <div class="eyebrow eyebrow--center"><span></span>ROUND OVER<span></span></div>
+      <h2 id="resultTitle">你赢了</h2>
+      <p class="result-sub" id="resultSub">抢在电脑前面，清空了更多色块。</p>
+
+      <div class="result-scores" aria-label="本局比分">
+        <div class="result-side result-side--player">
+          <span>你</span>
+          <strong id="finalPlayerScore">0</strong>
+          <small>对</small>
+        </div>
+        <div class="result-vs">VS</div>
+        <div class="result-side result-side--ai">
+          <span>电脑</span>
+          <strong id="finalAiScore">0</strong>
+          <small>对</small>
+        </div>
+      </div>
+
+      <div class="result-stats">
+        <div><span>本局用时</span><b id="finalTime">01:00</b></div>
+        <div><span>难度</span><b id="finalDifficulty">标准</b></div>
+        <div><span>电脑节奏</span><b id="finalAiRate">3.0 秒/手</b></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="primary-btn" id="againBtn" type="button">再来一局</button>
+        <button class="ghost-btn" id="changeDifficultyBtn" type="button">调整难度</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
