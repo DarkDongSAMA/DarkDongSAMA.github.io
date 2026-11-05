@@ -1,5 +1,5 @@
 /*
- * 纯色连连看 · 核心逻辑
+ * 卡比的美食比赛 · 核心逻辑
  * 不依赖 DOM，可在浏览器（window.LLK）或 Node.js（module.exports）中使用。
  *
  * 棋盘坐标：row 从 0 开始，col 从 0 开始。
@@ -589,6 +589,7 @@
     const opts = options || {};
     const random = typeof opts.rng === "function" ? opts.rng : Math.random;
     const desiredSplits = Number.isInteger(opts.count) ? opts.count : 4;
+    const blocked = new Set(opts.blocked || []);
 
     const rows = board.length;
     const cols = board[0] ? board[0].length : 0;
@@ -608,13 +609,15 @@
       col >= 0 &&
       col < cols &&
       Boolean(mask[row][col]) &&
-      board[row][col] === null;
+      board[row][col] === null &&
+      !blocked.has(`${row}:${col}`);
 
     const groups = new Map();
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
         const color = board[row][col];
         if (color === null || color === undefined) continue;
+        if (blocked.has(`${row}:${col}`)) continue;
         const emptyNeighbors = [];
         for (const [dy, dx] of [
           [0, 1],
@@ -720,6 +723,230 @@
     };
   }
 
+  /**
+   * 随机选择若干对同色方块，与棋盘上已有的相邻格对交换位置，
+   * 让每个被选中的色对最终落在相邻的两个活动格里。
+   * 不增删方块，只交换颜色。
+   */
+  function swapPairsIntoAdjacent(board, mask, options) {
+    const opts = options || {};
+    const random = typeof opts.rng === "function" ? opts.rng : Math.random;
+    const requested = Math.max(1, Math.floor(opts.count || 4));
+    const blocked = new Set(opts.blocked || []);
+    const rows = board.length;
+    const cols = board[0] ? board[0].length : 0;
+    if (!Array.isArray(mask) || mask.length !== rows) {
+      throw new Error("换位蒙版与棋盘行数不一致。");
+    }
+    for (const row of mask) {
+      if (!Array.isArray(row) || row.length !== cols) {
+        throw new Error("换位蒙版与棋盘列数不一致。");
+      }
+    }
+
+    const cellsByColor = new Map();
+    const activeCells = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (!mask[row][col]) continue;
+        const color = board[row][col];
+        if (color === null || color === undefined) continue;
+        if (blocked.has(`${row}:${col}`)) continue;
+        if (!cellsByColor.has(color)) cellsByColor.set(color, []);
+        cellsByColor.get(color).push({ row, col });
+        activeCells.push({ row, col });
+      }
+    }
+    if (activeCells.length < 2) return null;
+
+    const colorCandidates = shuffle(
+      [...cellsByColor.entries()].filter(([, cells]) => cells.length >= 2),
+      random
+    );
+    const sourcePairs = [];
+    for (const [color, cells] of colorCandidates) {
+      if (sourcePairs.length >= requested) break;
+      const picked = shuffle(cells.slice(), random).slice(0, 2);
+      sourcePairs.push({ color, cells: picked });
+    }
+    if (!sourcePairs.length) return null;
+    const sourceKeys = new Set();
+    for (const pair of sourcePairs) {
+      for (const cell of pair.cells) sourceKeys.add(`${cell.row}:${cell.col}`);
+    }
+
+    const adjacentPairs = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (!mask[row][col] || board[row][col] === null) continue;
+        if (blocked.has(`${row}:${col}`)) continue;
+        if (col + 1 < cols && mask[row][col + 1] && board[row][col + 1] !== null) {
+          if (!blocked.has(`${row}:${col + 1}`)) {
+            adjacentPairs.push({
+              a: { row, col },
+              b: { row, col: col + 1 },
+            });
+          }
+        }
+        if (row + 1 < rows && mask[row + 1][col] && board[row + 1][col] !== null) {
+          if (!blocked.has(`${row + 1}:${col}`)) {
+            adjacentPairs.push({
+              a: { row, col },
+              b: { row: row + 1, col },
+            });
+          }
+        }
+      }
+    }
+    shuffle(adjacentPairs, random);
+
+    const targetPairs = [];
+    const usedTargetCells = new Set();
+    for (const pair of adjacentPairs) {
+      if (targetPairs.length >= sourcePairs.length) break;
+      const aKey = `${pair.a.row}:${pair.a.col}`;
+      const bKey = `${pair.b.row}:${pair.b.col}`;
+      if (
+        sourceKeys.has(aKey) ||
+        sourceKeys.has(bKey) ||
+        usedTargetCells.has(aKey) ||
+        usedTargetCells.has(bKey)
+      ) {
+        continue;
+      }
+      usedTargetCells.add(aKey);
+      usedTargetCells.add(bKey);
+      targetPairs.push(pair);
+    }
+    if (!targetPairs.length) return null;
+
+    const pairCount = Math.min(sourcePairs.length, targetPairs.length, requested);
+    const nextBoard = board.map((row) => row.slice());
+    const swaps = [];
+    for (let i = 0; i < pairCount; i += 1) {
+      const source = sourcePairs[i];
+      const target = targetPairs[i];
+      const oldA = board[target.a.row][target.a.col];
+      const oldB = board[target.b.row][target.b.col];
+      nextBoard[target.a.row][target.a.col] = source.color;
+      nextBoard[target.b.row][target.b.col] = source.color;
+      nextBoard[source.cells[0].row][source.cells[0].col] = oldA;
+      nextBoard[source.cells[1].row][source.cells[1].col] = oldB;
+      swaps.push({
+        color: source.color,
+        source: source.cells,
+        target: target,
+      });
+    }
+
+    if (countRemaining(nextBoard) !== countRemaining(board)) {
+      throw new Error("换位后色块数量不守恒。");
+    }
+
+    return {
+      board: nextBoard,
+      swaps,
+      pairCount,
+      targetPairCount: requested,
+      tileCount: countRemaining(nextBoard),
+    };
+  }
+
+  /**
+   * 从一个随机位置长出一团相邻方块，并把这团方块全部吸入。
+   * 默认数量为 7～11 个，不要求颜色成对。
+   */
+  function suckAdjacentCluster(board, mask, options) {
+    const opts = options || {};
+    const random = typeof opts.rng === "function" ? opts.rng : Math.random;
+    const minCount = Math.max(2, Math.floor(opts.min || 7));
+    const maxCount = Math.max(minCount, Math.floor(opts.max || 11));
+    const blocked = new Set(opts.blocked || []);
+    const rows = board.length;
+    const cols = board[0] ? board[0].length : 0;
+    if (!Array.isArray(mask) || mask.length !== rows) {
+      throw new Error("吸入蒙版与棋盘行数不一致。");
+    }
+    for (const row of mask) {
+      if (!Array.isArray(row) || row.length !== cols) {
+        throw new Error("吸入蒙版与棋盘列数不一致。");
+      }
+    }
+
+    const active = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (!mask[row][col]) continue;
+        if (board[row][col] === null || board[row][col] === undefined) continue;
+        if (blocked.has(`${row}:${col}`)) continue;
+        active.push({ row, col });
+      }
+    }
+    if (active.length < minCount) return null;
+
+    const maxAvailable = active.length;
+    const targets = [];
+    for (let count = minCount; count <= maxCount; count += 1) {
+      if (count <= maxAvailable) targets.push(count);
+    }
+    if (!targets.length) return null;
+
+    const neighbors = (cell) => [
+      { row: cell.row - 1, col: cell.col },
+      { row: cell.row + 1, col: cell.col },
+      { row: cell.row, col: cell.col - 1 },
+      { row: cell.row, col: cell.col + 1 },
+    ];
+    const isOpen = (cell) =>
+      cell.row >= 0 &&
+      cell.row < rows &&
+      cell.col >= 0 &&
+      cell.col < cols &&
+      Boolean(mask[cell.row][cell.col]) &&
+      board[cell.row][cell.col] !== null &&
+      !blocked.has(`${cell.row}:${cell.col}`);
+
+    let best = null;
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const starts = shuffle(active.slice(), random);
+      const start = starts[0];
+      const target = targets[Math.floor(random() * targets.length)];
+      const cluster = [start];
+      const clusterKeys = new Set([`${start.row}:${start.col}`]);
+      let frontier = neighbors(start).filter(isOpen);
+
+      while (cluster.length < target && frontier.length) {
+        const index = Math.floor(random() * frontier.length);
+        const cell = frontier.splice(index, 1)[0];
+        const key = `${cell.row}:${cell.col}`;
+        if (clusterKeys.has(key)) continue;
+        clusterKeys.add(key);
+        cluster.push(cell);
+        for (const next of neighbors(cell)) {
+          if (!isOpen(next)) continue;
+          const nextKey = `${next.row}:${next.col}`;
+          if (clusterKeys.has(nextKey)) continue;
+          frontier.push(next);
+        }
+      }
+
+      if (cluster.length >= minCount) {
+        if (cluster.length > (best ? best.length : 0)) best = cluster;
+        if (cluster.length === target) break;
+      }
+    }
+
+    if (!best || best.length < minCount) return null;
+    const nextBoard = board.map((row) => row.slice());
+    for (const cell of best) nextBoard[cell.row][cell.col] = null;
+    return {
+      board: nextBoard,
+      cells: best,
+      removedCount: best.length,
+      tileCount: countRemaining(nextBoard),
+    };
+  }
+
   function removePair(board, a, b) {
     if (!isInside(board, a.row, a.col) || !isInside(board, b.row, b.col)) {
       return false;
@@ -740,7 +967,9 @@
     createPlayableBoard,
     createPlayableBoardFromMask,
     rearrangeWithAdjacentPairs,
+    swapPairsIntoAdjacent,
     splitTilesIntoAdjacentPairs,
+    suckAdjacentCluster,
     boardSize,
     countRemaining,
     colorCounts,

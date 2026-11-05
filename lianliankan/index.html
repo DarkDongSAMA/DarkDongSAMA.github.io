@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#070a12">
-  <title>纯色连连看 · 人机对战</title>
+  <title>卡比的美食比赛 · 人机对战</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,8 +19,8 @@
           <i></i><i></i><i></i><i></i>
         </span>
         <span class="brand-copy">
-          <strong>纯色连连看</strong>
-          <small>COLOR LINK</small>
+          <strong>卡比的美食比赛</strong>
+          <small>KIRBY FOOD MATCH</small>
         </span>
       </div>
       <div class="top-actions">
@@ -37,7 +37,7 @@
           <div class="avatar avatar--player" id="playerAvatar" aria-hidden="true">1</div>
           <div class="fighter-meta">
             <span class="fighter-name" id="playerName">卡比</span>
-            <span class="score-line"><strong class="score" id="playerScore">0</strong><span class="unit">对</span></span>
+            <span class="score-line"><strong class="score" id="playerScore">0</strong><span class="unit">块</span></span>
           </div>
           <span class="skill-progress" aria-hidden="true"><i id="skillBar"></i></span>
         </div>
@@ -48,7 +48,7 @@
             <span class="clock-label">剩余时间</span>
           </div>
           <div class="clock-bottom">
-            <span>场上 <b id="remaining">60</b> 对</span>
+            <span>场上 <b id="remaining">120</b> 块</span>
             <span class="clock-track" aria-hidden="true"><i id="timerBar"></i></span>
           </div>
         </div>
@@ -57,7 +57,7 @@
           <div class="avatar avatar--ai" id="aiAvatar" aria-hidden="true">🍑</div>
           <div class="fighter-meta">
             <span class="fighter-name" id="aiName">电脑 · 卡比</span>
-            <span class="score-line"><strong class="score" id="aiScore">0</strong><span class="unit">对</span></span>
+            <span class="score-line"><strong class="score" id="aiScore">0</strong><span class="unit">块</span></span>
           </div>
           <span class="ai-skill-progress" aria-hidden="true"><i id="aiSkillBar"></i></span>
           <span class="ai-progress" aria-hidden="true"><i id="aiProgress"></i></span>
@@ -71,6 +71,9 @@
         </div>
 
         <div class="board" id="board">
+          <div class="blackhole-layer" id="blackholeLayer" aria-hidden="true">
+            <div class="skill-blackhole" id="skillBlackhole" aria-hidden="true"><i></i><i></i><i></i><b></b><span class="blackhole-core"></span></div>
+          </div>
           <div class="tile-layer" id="tileLayer"></div>
           <svg class="path-layer" id="pathLayer" aria-hidden="true"></svg>
           <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -84,13 +87,10 @@
           <div class="board-actions">
             <button class="skill-btn" id="skillBtn" type="button" disabled aria-label="技能充能中">
               <span class="skill-icon" aria-hidden="true">✦</span>
-              <span class="skill-name" id="skillNameLabel">食材旋涡</span>
+              <span class="skill-name" id="skillNameLabel">超级吸入</span>
               <span class="skill-name-short">技能</span>
               <span class="skill-state" id="skillState">5.0s</span>
               <kbd>E</kbd>
-            </button>
-            <button class="hint-btn" id="hintBtn" type="button" disabled>
-              <span>提示</span><b class="hint-count" id="hintCount">3</b><kbd>H</kbd>
             </button>
           </div>
         </div>
@@ -98,7 +98,7 @@
 
       <footer class="footnote">
         <span class="footnote-rule" aria-hidden="true"></span>
-        60 秒限时 · 玩家技能 5 秒充能 · 电脑技能 5–7 秒随机释放 · 每局 3 次提示
+        60 秒限时 · 玩家技能 5 秒充能 · 电脑技能 5–7 秒随机释放
       </footer>
     </main>
   </div>
@@ -112,14 +112,14 @@
   <div class="overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
     <div class="modal start-modal">
       <button class="inline-settings start-help-btn" id="startHelpBtn" type="button" aria-label="查看玩法">玩法</button>
-      <div class="eyebrow"><span></span>COLOR MATCH · 1 VS 1</div>
+      <div class="eyebrow"><span></span>KIRBY FOOD MATCH · 1 VS 1</div>
       <div class="logo-tiles" aria-hidden="true">
         <i style="--c:#ff5a5f;--r:-8deg">🍎</i>
         <i style="--c:#ffd60a;--r:6deg">🍋</i>
         <i style="--c:#2ecc71;--r:-5deg">🥦</i>
         <i style="--c:#4f7cff;--r:9deg">🍇</i>
       </div>
-      <h1 id="startTitle">纯色连连看</h1>
+      <h1 id="startTitle">卡比的美食比赛</h1>
       <p class="start-lead">每局随机棋谱，和电脑抢时间。最多两弯，连接同色块。</p>
 
       <div class="theme-block">
@@ -146,7 +146,7 @@
           <span class="ai-role-label">电脑</span>
           <div class="ai-character-grid" id="aiCharacterGroup" role="group" aria-label="选择电脑角色"></div>
         </div>
-        <p class="role-summary" id="roleSummary">你的技能：食材旋涡 · 电脑：随机角色</p>
+        <p class="role-summary" id="roleSummary">你的技能：超级吸入 · 电脑：随机角色</p>
       </div>
 
       <div class="difficulty-block">
@@ -170,7 +170,7 @@
       <button class="primary-btn start-btn" id="startBtn" type="button">
         <span>开始对战</span><span class="btn-arrow" aria-hidden="true">→</span>
       </button>
-      <p class="start-note">点击色块操作 · 按 <kbd>E</kbd> 释放技能 · 每局 3 次提示</p>
+      <p class="start-note">点击色块操作 · 按 <kbd>E</kbd> 或手机双击棋盘释放技能</p>
     </div>
   </div>
 
@@ -197,8 +197,8 @@
         <li><b>随机棋谱</b><span>每局都会随机出现不同形状、不同色块数量的棋盘，也可以在开局前自选棋谱。</span></li>
         <li><b>选择同色</b><span>依次点击两个颜色相同的色块。</span></li>
         <li><b>连起来</b><span>连接路线只能水平或垂直，最多转弯 2 次，也可以从棋盘边缘外绕行。</span></li>
-        <li><b>抢在电脑前</b><span>你和电脑同时消除。60 秒后，消除对数更多的一方获胜。</span></li>
-        <li><b>提示与重排</b><span>每局最多使用 3 次提示（快捷键 H）；没有可消除组合时，棋盘会自动重排。</span></li>
+        <li><b>抢在电脑前</b><span>你和电脑同时消除。60 秒后，消除方块数更多的一方获胜。</span></li>
+        <li><b>无解结算</b><span>当棋盘上没有可消除组合时，本局立即结束，直接按当前得分结算，不再自动重排。</span></li>
       </ol>
       <button class="primary-btn" id="helpOkBtn" type="button">明白了</button>
     </div>
@@ -214,7 +214,7 @@
       <div class="setting-character">
         <span class="character-avatar" id="settingCharacterAvatar" aria-hidden="true">🍑</span>
         <div class="setting-character-info">
-          <strong id="settingCharacterTitle">卡比 · 食材旋涡</strong>
+          <strong id="settingCharacterTitle">卡比 · 超级吸入</strong>
           <span id="settingCharacterDesc">5 秒充能 · 自动消除最多 3 对同色食材</span>
         </div>
       </div>
@@ -247,13 +247,13 @@
         <div class="result-side result-side--player">
           <span>你</span>
           <strong id="finalPlayerScore">0</strong>
-          <small>对</small>
+          <small>块</small>
         </div>
         <div class="result-vs">VS</div>
         <div class="result-side result-side--ai">
           <span>电脑</span>
           <strong id="finalAiScore">0</strong>
-          <small>对</small>
+          <small>块</small>
         </div>
       </div>
 
@@ -270,6 +270,10 @@
       </div>
     </div>
   </div>
+
+  <audio id="clickSound" src="00be - SE_KETTEI.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="pauseSound" src="00ba - SE_PAUSE.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="bgMusic" src="12. Crash! Gourmet Race.mp3" preload="auto" loop aria-hidden="true"></audio>
 
   <script src="layouts.js"></script>
   <script src="logic.js"></script>

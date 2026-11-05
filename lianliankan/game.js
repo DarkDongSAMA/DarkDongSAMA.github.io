@@ -7,13 +7,15 @@
   const ROWS = LAYOUT_API ? LAYOUT_API.ROWS : 10;
   const LAYOUTS = LAYOUT_API ? LAYOUT_API.LAYOUTS : [];
   const MATCH_SECONDS = 60;
-  const HINT_LIMIT = 3;
-  const HINT_COOLDOWN_MS = 2300;
   const SKILL_CHARGE_SECONDS = 5;
+  const BGM_VOLUME = 0.24;
+  const BGM_PAUSE_FACTOR = 0.8;
   const AI_SKILL_MIN_SECONDS = 5;
   const AI_SKILL_MAX_SECONDS = 6.8;
   const AI_SKILL_TRIGGER_DELAY_MS = 60;
   const PLAYER_SPLIT_AI_GUARD_MS = 2500;
+  const WEB_PAIR_COUNT = 3;
+  const WEB_DURATION_MS = 3000;
   const AUTO_SKILL_STORAGE_KEY = "color-link-auto-skill";
 
   const COLORS = [
@@ -87,8 +89,8 @@
       id: "role1",
       name: "卡比",
       avatar: "🍑",
-      skillName: "食材旋涡",
-      effect: "消除最多 3 对同色块",
+      skillName: "超级吸入",
+      effect: "消除3对同色",
       cardDescription: "自动消除最多 3 对同色食材",
       settingDescription: "5 秒充能 · 自动消除最多 3 对同色食材",
       accent: "#ff8ab4",
@@ -98,10 +100,10 @@
       id: "role2",
       name: "帝帝帝大王",
       avatar: "✌️",
-      skillName: "震地重排",
-      effect: "重排，约 1/4 成对并列",
-      cardDescription: "重排方块，约 1/4 成对并列",
-      settingDescription: "5 秒充能 · 重排方块，约 1/4 成对并列",
+      skillName: "锤子敲击",
+      effect: "4对交换并列",
+      cardDescription: "随机让 4 对同色块交换成并列",
+      settingDescription: "5 秒充能 · 随机让 4 对同色块交换成并列",
       accent: "#ffd60a",
       accentSoft: "rgba(255, 214, 10, 0.28)",
     },
@@ -109,12 +111,34 @@
       id: "role3",
       name: "魅塔骑士",
       avatar: "🫐",
-      skillName: "裂空斩",
-      effect: "最多 4 块分裂为同色对",
+      skillName: "新月斩击",
+      effect: "4块分裂成对",
       cardDescription: "最多 4 个方块分裂出相邻同色块",
       settingDescription: "5 秒充能 · 最多 4 个方块分裂出相邻同色块",
       accent: "#4f72e8",
       accentSoft: "rgba(79, 114, 232, 0.32)",
+    },
+    role4: {
+      id: "role4",
+      name: "塔狼蛛",
+      avatar: "🕷️",
+      skillName: "魔术蛛丝",
+      effect: "3对结网3秒消",
+      cardDescription: "随机让 3 对同色方块结网，3 秒后消除",
+      settingDescription: "5 秒充能 · 3 对同色方块结网，3 秒后消除",
+      accent: "#2f6b4f",
+      accentSoft: "rgba(47, 107, 79, 0.34)",
+    },
+    role5: {
+      id: "role5",
+      name: "魔噜酷",
+      avatar: "🤡",
+      skillName: "黑洞吸收",
+      effect: "吸入7-11块",
+      cardDescription: "随机位置吸入 7-11 个紧挨在一起的方块，不要求成对",
+      settingDescription: "5 秒充能 · 随机位置吸入 7-11 个相邻方块",
+      accent: "#b79cff",
+      accentSoft: "rgba(183, 156, 255, 0.34)",
     },
   };
   const CHARACTER_IDS = Object.keys(CHARACTERS);
@@ -127,6 +151,7 @@
 
   const $ = (id) => document.getElementById(id);
   const els = {
+    app: document.querySelector(".app"),
     app: document.querySelector(".app"),
     playerCard: $("playerCard"),
     playerAvatar: $("playerAvatar"),
@@ -153,15 +178,17 @@
     skillNameLabel: $("skillNameLabel"),
     skillBar: $("skillBar"),
     skillState: $("skillState"),
-    hintBtn: $("hintBtn"),
-    hintCount: $("hintCount"),
-    pauseBtn: $("pauseBtn"),
+    skillBtn: $("skillBtn"),    pauseBtn: $("pauseBtn"),
     helpBtn: $("helpBtn"),
     settingsBtn: $("settingsBtn"),
     fxLayer: $("fxLayer"),
     skillVortex: $("skillVortex"),
     skillImpact: $("skillImpact"),
     skillSlash: $("skillSlash"),
+    skillBlackhole: $("skillBlackhole"),
+    clickSound: $("clickSound"),
+    pauseSound: $("pauseSound"),
+    bgMusic: $("bgMusic"),
     startOverlay: $("startOverlay"),
     pauseOverlay: $("pauseOverlay"),
     helpOverlay: $("helpOverlay"),
@@ -234,12 +261,9 @@
     boardCheckTimer: null,
     reshuffleTimer: null,
     endTimer: null,
-    hintCooldownTimer: null,
-    hintCooldownUntil: 0,
     pathTimer: null,
     toastTimer: null,
     toastToken: 0,
-    hintsLeft: HINT_LIMIT,
     character: "role1",
     aiCharacterChoice: "random",
     aiCharacter: "role1",
@@ -255,7 +279,16 @@
     shakeStartTimer: null,
     shakeTimer: null,
     slashTimer: null,
+    blackholeTimer: null,
+    bgFadeTimer: null,
     splitGuards: new Map(),
+    webbedCells: new Map(),
+    webCellActors: new Map(),
+    webGroups: [],
+    webGroupSeq: 0,
+    webCleanupTimer: null,
+    aiLockUntil: 0,
+    ignoreTileClicksUntil: 0,
     aiSkillCharge: 0,
     aiSkillDuration: AI_SKILL_MIN_SECONDS,
     aiSkillReady: false,
@@ -273,6 +306,7 @@
 
   const tileEls = new Map();
   const keyOf = (row, col) => `${row}:${col}`;
+  let lastBoardTap = { time: 0, x: 0, y: 0, cell: "" };
 
   function setupBoardGeometry() {
     els.board.style.setProperty("--vcols", COLS + 2);
@@ -502,7 +536,7 @@
       const skill = document.createElement("span");
       skill.textContent = character.skillName;
       const desc = document.createElement("small");
-      desc.textContent = character.cardDescription;
+      desc.textContent = character.effect;
       info.append(name, skill, desc);
 
       const check = document.createElement("span");
@@ -830,6 +864,7 @@
       }
     }
     els.tileLayer.appendChild(fragment);
+    applyWebClasses();
   }
 
   function appendSplitTile(row, col, color) {
@@ -894,19 +929,6 @@
     const canPause = state.status === "playing" || state.status === "paused";
     els.pauseBtn.disabled = !canPause;
     els.pauseBtn.textContent = state.status === "paused" ? "继续" : "暂停";
-    const onCooldown = performance.now() < state.hintCooldownUntil;
-    const noHints = state.hintsLeft <= 0;
-    els.hintBtn.disabled =
-      state.status !== "playing" || state.reshuffling || onCooldown || noHints;
-    els.hintBtn.classList.toggle("is-empty", noHints);
-    els.hintCount.textContent = String(state.hintsLeft);
-    els.hintBtn.setAttribute(
-      "aria-label",
-      noHints ? "提示已用完" : `提示，本局还剩 ${state.hintsLeft} 次`
-    );
-    els.hintBtn.title = noHints
-      ? "本局提示已用完"
-      : `本局还剩 ${state.hintsLeft} 次提示（快捷键 H）`;
     updateSkillUI();
     updateAiSkillUI();
   }
@@ -1189,6 +1211,226 @@
     );
   }
 
+  function setTileWebbed(tile, webbed, actor) {
+    if (!tile) return;
+    if (webbed) {
+      if (!tile.dataset.webBaseTitle) {
+        tile.dataset.webBaseTitle = tile.title || "";
+      }
+      tile.classList.add("is-webbed");
+      tile.classList.toggle("is-own-web", actor === "player");
+      if (actor === "player") {
+        tile.removeAttribute("aria-disabled");
+      } else {
+        tile.setAttribute("aria-disabled", "true");
+      }
+      tile.title =
+        actor === "player"
+          ? "你布下的蛛网 · 可以点击消除"
+          : "敌方蛛网 · 3 秒内不可点击";
+      if (!tile.querySelector(".tile-web")) {
+        const web = document.createElement("span");
+        web.className = "tile-web";
+        web.setAttribute("aria-hidden", "true");
+        web.textContent = "🕸️";
+        tile.appendChild(web);
+      }
+      return;
+    }
+    tile.classList.remove("is-webbed", "is-own-web");
+    tile.removeAttribute("aria-disabled");
+    const web = tile.querySelector(".tile-web");
+    if (web) web.remove();
+    if (tile.dataset.webBaseTitle !== undefined) {
+      tile.title = tile.dataset.webBaseTitle;
+      delete tile.dataset.webBaseTitle;
+    }
+  }
+
+  function getWebbedCellKeys() {
+    const now = performance.now();
+    const keys = new Set();
+    for (const [key, expiresAt] of state.webbedCells) {
+      if (expiresAt > now) keys.add(key);
+    }
+    return keys;
+  }
+
+  function isCellWebbed(row, col) {
+    const expiresAt = state.webbedCells.get(`${row}:${col}`);
+    return Boolean(expiresAt && expiresAt > performance.now());
+  }
+
+  function getWebCellOwner(row, col) {
+    const key = `${row}:${col}`;
+    const expiresAt = state.webbedCells.get(key);
+    if (!expiresAt || expiresAt <= performance.now()) return null;
+    return state.webCellActors.get(key) || null;
+  }
+
+  function scheduleWebCleanup() {
+    clearTimeout(state.webCleanupTimer);
+    state.webCleanupTimer = null;
+    if (!state.webGroups.length) return;
+    const now = performance.now();
+    const nextExpiry = state.webGroups.reduce(
+      (next, group) => Math.min(next, group.expiresAt),
+      Infinity
+    );
+    if (nextExpiry <= now) {
+      cleanupExpiredWebGroups();
+      return;
+    }
+    if (nextExpiry < Infinity) {
+      state.webCleanupTimer = setTimeout(
+        cleanupExpiredWebGroups,
+        Math.max(30, nextExpiry - now + 20)
+      );
+    }
+  }
+
+  function cleanupExpiredWebGroups() {
+    state.webCleanupTimer = null;
+    const now = performance.now();
+    const due = state.webGroups.filter((group) => group.expiresAt <= now);
+    if (!due.length) {
+      scheduleWebCleanup();
+      return;
+    }
+    state.webGroups = state.webGroups.filter((group) => group.expiresAt > now);
+
+    let removedTilesTotal = 0;
+    let lastActor = "player";
+    for (const group of due) {
+      lastActor = group.actor;
+      let removedTiles = 0;
+      for (const cell of group.cells) {
+        const key = skillCellKey(cell);
+        state.webbedCells.delete(key);
+        state.webCellActors.delete(key);
+        const tile = tileEls.get(key);
+        if (tile) {
+          setTileWebbed(tile, false);
+          tile.classList.add("is-web-fading");
+          setTimeout(() => {
+            if (tile.isConnected) tile.remove();
+          }, 420);
+        }
+        tileEls.delete(key);
+        if (
+          state.board[cell.row] &&
+          state.board[cell.row][cell.col] !== null &&
+          state.board[cell.row][cell.col] !== undefined
+        ) {
+          state.board[cell.row][cell.col] = null;
+          removedTiles += 1;
+        }
+      }
+      if (removedTiles > 0) {
+        removedTilesTotal += removedTiles;
+        addActorScore(group.actor, removedTiles);
+      }
+    }
+
+    if (removedTilesTotal > 0) {
+      state.remaining = Math.max(0, state.remaining - removedTilesTotal);
+      renderHud();
+      if (state.status === "playing") {
+        const who = lastActor === "ai" ? "电脑" : "你";
+        setStatus(`蛛网消散 · ${who}消除了 ${removedTilesTotal} 块`, "warn");
+        showToast(
+          `蛛网消散 · ${removedTilesTotal} 块已消除`,
+          lastActor === "ai" ? "warn" : "ok",
+          1500
+        );
+        queueBoardCheck();
+      }
+    }
+    scheduleWebCleanup();
+  }
+
+  function markWebbedPairs(pairs, actor) {
+    if (!pairs.length) return 0;
+    const expiresAt = performance.now() + WEB_DURATION_MS;
+    const cells = [];
+    for (const pair of pairs) {
+      for (const cell of pair.cells) {
+        const key = skillCellKey(cell);
+        state.webbedCells.set(key, expiresAt);
+        state.webCellActors.set(key, actor);
+        setTileWebbed(tileEls.get(key), true, actor);
+        cells.push({ row: cell.row, col: cell.col });
+      }
+    }
+    state.webGroupSeq += 1;
+    state.webGroups.push({
+      id: state.webGroupSeq,
+      actor,
+      pairCount: pairs.length,
+      expiresAt,
+      cells,
+    });
+    scheduleWebCleanup();
+    return pairs.length;
+  }
+
+  function clearWebs() {
+    clearTimeout(state.webCleanupTimer);
+    state.webCleanupTimer = null;
+    for (const key of state.webbedCells.keys()) {
+      setTileWebbed(tileEls.get(key), false);
+    }
+    state.webbedCells.clear();
+    state.webCellActors.clear();
+    state.webGroups = [];
+  }
+
+  function applyWebClasses() {
+    const activeKeys = getWebbedCellKeys();
+    for (const key of state.webbedCells.keys()) {
+      if (activeKeys.has(key)) {
+        setTileWebbed(tileEls.get(key), true, state.webCellActors.get(key));
+      }
+    }
+    if (state.webGroups.length) scheduleWebCleanup();
+  }
+
+  function getAiBlockedCells() {
+    const blocked = new Set();
+    for (const key of getWebbedCellKeys()) {
+      if (state.webCellActors.get(key) !== "ai") blocked.add(key);
+    }
+    for (const key of getAiGuardedCells()) blocked.add(key);
+    return blocked;
+  }
+
+  function chooseWebPairs() {
+    const cellsByColor = new Map();
+    const rows = state.board.length;
+    const cols = state.board[0] ? state.board[0].length : 0;
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const color = state.board[row][col];
+        if (color === null || color === undefined) continue;
+        if (isCellWebbed(row, col)) continue;
+        if (!cellsByColor.has(color)) cellsByColor.set(color, []);
+        cellsByColor.get(color).push({ row, col });
+      }
+    }
+    const colors = LLK.shuffle([...cellsByColor.keys()]);
+    const pairs = [];
+    for (const color of colors) {
+      const cells = LLK.shuffle(cellsByColor.get(color).slice());
+      while (cells.length >= 2 && pairs.length < WEB_PAIR_COUNT) {
+        const a = cells.pop();
+        const b = cells.pop();
+        pairs.push({ color, cells: [a, b] });
+      }
+      if (pairs.length >= WEB_PAIR_COUNT) break;
+    }
+    return pairs;
+  }
+
   /**
    * 优先找同一花色的 3 对，且三对互不共用色块。
    * 如果同花色不足以凑 3 对，再用其他花色补齐。
@@ -1296,6 +1538,19 @@
     }, 760);
   }
 
+  function showBlackHole(x, y) {
+    clearTimeout(state.blackholeTimer);
+    els.skillBlackhole.style.setProperty("--hole-x", `${x}px`);
+    els.skillBlackhole.style.setProperty("--hole-y", `${y}px`);
+    els.skillBlackhole.classList.remove("is-active");
+    void els.skillBlackhole.offsetWidth;
+    els.skillBlackhole.classList.add("is-active");
+    state.blackholeTimer = setTimeout(() => {
+      state.blackholeTimer = null;
+      els.skillBlackhole.classList.remove("is-active");
+    }, 1100);
+  }
+
   function clearSkillEffects() {
     clearTimeout(state.vortexTimer);
     state.vortexTimer = null;
@@ -1307,9 +1562,12 @@
     state.shakeTimer = null;
     clearTimeout(state.slashTimer);
     state.slashTimer = null;
+    clearTimeout(state.blackholeTimer);
+    state.blackholeTimer = null;
     if (els.skillVortex) els.skillVortex.classList.remove("is-active");
     if (els.skillImpact) els.skillImpact.classList.remove("is-active");
     if (els.skillSlash) els.skillSlash.classList.remove("is-active");
+    if (els.skillBlackhole) els.skillBlackhole.classList.remove("is-active");
     if (els.app) els.app.classList.remove("is-shaking");
     if (els.fxLayer) els.fxLayer.innerHTML = "";
   }
@@ -1350,9 +1608,6 @@
     clearSelection();
     clearTimeout(state.pathTimer);
     els.pathLayer.innerHTML = "";
-    for (const tile of els.tileLayer.querySelectorAll(".tile.is-hint")) {
-      tile.classList.remove("is-hint");
-    }
   }
 
   function beginActorSkill(actor) {
@@ -1420,6 +1675,12 @@
     if (state.character === "role3") {
       return executeSplitSkill("player", automatic);
     }
+    if (state.character === "role4") {
+      return executeWebSkill("player", automatic);
+    }
+    if (state.character === "role5") {
+      return executeBlackHoleSkill("player", automatic);
+    }
     return executeEliminationSkill("player", automatic);
   }
 
@@ -1433,6 +1694,10 @@
     ) {
       return false;
     }
+    if (performance.now() < state.aiLockUntil) {
+      scheduleAiSkill(Math.max(80, state.aiLockUntil - performance.now() + 40));
+      return false;
+    }
     if (state.reshuffling) {
       scheduleAiSkill(650);
       return false;
@@ -1443,31 +1708,46 @@
     if (state.aiCharacter === "role3") {
       return executeSplitSkill("ai", true);
     }
+    if (state.aiCharacter === "role4") {
+      return executeWebSkill("ai", true);
+    }
+    if (state.aiCharacter === "role5") {
+      return executeBlackHoleSkill("ai", true);
+    }
     return executeEliminationSkill("ai", true);
   }
 
   function executeEliminationSkill(actor, automatic) {
     const character = getCharacterForActor(actor);
     const allMoves = LLK.findAvailableMoves(state.board);
-    const guarded = actor === "ai" ? getAiGuardedCells() : null;
-    const moves = chooseSkillMoves(guarded);
+    const blocked = new Set();
+    for (const key of getWebbedCellKeys()) {
+      if (state.webCellActors.get(key) !== actor) blocked.add(key);
+    }
+    if (actor === "ai") {
+      for (const key of getAiGuardedCells()) blocked.add(key);
+    }
+    const moves = chooseSkillMoves(blocked);
     if (!moves.length) {
-      if (actor === "ai" && allMoves.length) {
-        // 所有可消组合都包含刚分裂出的保护格，等保护结束再尝试。
-        scheduleAiSkill(650);
+      if (allMoves.length) {
+        if (actor === "ai") {
+          scheduleAiSkill(650);
+        } else if (automatic) {
+          scheduleAutoSkill(900);
+        } else {
+          setStatus("蛛网封住了可消组合，等它消失再释放", "warn");
+          showToast("被蛛网盖住的方块还不能消", "warn", 1000);
+        }
         return false;
       }
-      if (actor === "player" && !automatic) {
-        showToast("当前没有可消除组合，先重排", "warn", 1200);
-      }
-      beginReshuffle();
+      finishGame("deadlock");
       return false;
     }
 
     beginActorSkill(actor);
     clearBoardFocus();
-    state.remaining = Math.max(0, state.remaining - moves.length);
-    addActorScore(actor, moves.length);
+    state.remaining = Math.max(0, state.remaining - moves.length * 2);
+    addActorScore(actor, moves.length * 2);
 
     const targets = [];
     for (const move of moves) {
@@ -1495,7 +1775,7 @@
     renderHud();
     if (actor === "ai") {
       setStatus(
-        `电脑发动${character.skillName}，消除了 ${moves.length} 对食材`,
+        `电脑发动${character.skillName}，消除了 ${moves.length} 对食材（${moves.length * 2} 块）`,
         "warn"
       );
       showToast(
@@ -1505,7 +1785,7 @@
       );
     } else {
       setStatus(
-        `${character.skillName}！${automatic ? "自动" : ""}消除了 ${moves.length} 对同色食材`,
+        `${character.skillName}！${automatic ? "自动" : ""}消除了 ${moves.length} 对同色食材（${moves.length * 2} 块）`,
         "info"
       );
       showToast(
@@ -1520,9 +1800,10 @@
 
   function executeRearrangeSkill(actor, automatic) {
     const character = getCharacterForActor(actor);
-    const result = LLK.rearrangeWithAdjacentPairs(
+    const result = LLK.swapPairsIntoAdjacent(
       state.board,
-      state.layout.mask
+      state.layout.mask,
+      { count: 4, blocked: getWebbedCellKeys() }
     );
     if (!result) {
       if (actor === "ai") {
@@ -1530,7 +1811,7 @@
       } else if (automatic) {
         scheduleAutoSkill(1300);
       } else {
-        showToast("场上方块太少，暂时无法重排", "warn", 1200);
+        showToast("场上可交换的相邻方块不足", "warn", 1200);
       }
       return false;
     }
@@ -1539,13 +1820,17 @@
     clearBoardFocus();
     state.board = result.board;
     state.splitGuards.clear();
+    if (actor === "player") {
+      // 帝帝帝大王换位后，电脑短暂无法选择方块（不显示在界面上）。
+      state.aiLockUntil = performance.now() + 1000;
+    }
 
     showBottomImpact();
     renderBoard("rearrange");
     renderHud();
     if (actor === "ai") {
       setStatus(
-        `电脑发动${character.skillName}！${result.pairCount} 对食材并列`,
+        `电脑发动${character.skillName}！${result.pairCount} 对交换为并列`,
         "warn"
       );
       showToast(
@@ -1555,7 +1840,7 @@
       );
     } else {
       setStatus(
-        `${character.skillName}！${result.pairCount} 对食材已重新并列`,
+        `${character.skillName}！随机 ${result.pairCount} 对已交换为并列`,
         "info"
       );
       showToast(
@@ -1573,7 +1858,7 @@
     const result = LLK.splitTilesIntoAdjacentPairs(
       state.board,
       state.layout.mask,
-      { count: 4 }
+      { count: 4, blocked: getWebbedCellKeys() }
     );
     if (!result) {
       if (actor === "ai") {
@@ -1581,7 +1866,7 @@
       } else if (automatic) {
         scheduleAutoSkill(1300);
       } else {
-        setStatus("周围没有空位，消掉一些方块后再释放裂空斩", "warn");
+        setStatus("周围没有空位，消掉一些方块后再释放新月斩击", "warn");
         showToast("没有足够空位让方块分裂", "warn", 1400);
       }
       return false;
@@ -1590,7 +1875,7 @@
     beginActorSkill(actor);
     clearBoardFocus();
     state.board = result.board;
-    state.remaining += result.addedTiles / 2;
+    state.remaining += result.addedTiles;
     if (actor === "player") guardPlayerSplit(result);
 
     showScreenSlash();
@@ -1625,6 +1910,147 @@
         `${character.name}技能 · ${character.skillName} · +${result.addedTiles} 块 · 短暂防吸`,
         "ok",
         1800
+      );
+    }
+    scheduleActorSkillEnd(actor);
+    return true;
+  }
+
+  function executeWebSkill(actor, automatic) {
+    const character = getCharacterForActor(actor);
+    const pairs = chooseWebPairs();
+    if (!pairs.length) {
+      if (actor === "ai") {
+        scheduleAiSkill(1300);
+      } else if (automatic) {
+        scheduleAutoSkill(1300);
+      } else {
+        setStatus("场上没有可以结网的方块对", "warn");
+        showToast("没有可以结网的方块对", "warn", 1200);
+      }
+      return false;
+    }
+
+    beginActorSkill(actor);
+    clearBoardFocus();
+    const pairCount = markWebbedPairs(pairs, actor);
+    renderHud();
+    if (actor === "ai") {
+      setStatus(
+        `电脑发动${character.skillName}！${pairCount} 对结网；你不能点击，3 秒后自动消除`,
+        "warn"
+      );
+      showToast(
+        `电脑 · ${character.name} · ${character.skillName} · ${pairCount} 对（敌方蛛网不可点击）`,
+        "warn",
+        1600
+      );
+    } else {
+      setStatus(
+        `${character.skillName}！${pairCount} 对结网；你可以点击消除，3 秒后也会自动消除`,
+        "info"
+      );
+      showToast(
+        `${character.name}技能 · ${character.skillName} · ${pairCount} 对 · 你布下的蛛网可点击`,
+        "ok",
+        1600
+      );
+    }
+    scheduleActorSkillEnd(actor);
+    return true;
+  }
+
+  function executeBlackHoleSkill(actor, automatic) {
+    const character = getCharacterForActor(actor);
+    const result = LLK.suckAdjacentCluster(
+      state.board,
+      state.layout.mask,
+      { min: 7, max: 11, blocked: getWebbedCellKeys() }
+    );
+    if (!result) {
+      if (actor === "ai") {
+        scheduleAiSkill(1300);
+      } else if (automatic) {
+        scheduleAutoSkill(1300);
+      } else {
+        setStatus("棋盘上可吸入的相邻方块不足", "warn");
+        showToast("可吸入的相邻方块不足", "warn", 1200);
+      }
+      return false;
+    }
+
+    beginActorSkill(actor);
+    clearBoardFocus();
+    const rects = [];
+    for (const cell of result.cells) {
+      const tile = tileEls.get(keyOf(cell.row, cell.col));
+      if (!tile) continue;
+      rects.push(tile.getBoundingClientRect());
+    }
+    const centerX = rects.length
+      ? rects.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / rects.length
+      : window.innerWidth / 2;
+    const centerY = rects.length
+      ? rects.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / rects.length
+      : window.innerHeight / 2;
+    const boardRect = els.board.getBoundingClientRect();
+    const marginX = Math.min(82, boardRect.width / 2);
+    const marginY = Math.min(82, boardRect.height / 2);
+    const holeX = Math.max(
+      marginX,
+      Math.min(boardRect.width - marginX, centerX - boardRect.left)
+    );
+    const holeY = Math.max(
+      marginY,
+      Math.min(boardRect.height - marginY, centerY - boardRect.top)
+    );
+    const suctionX = boardRect.left + holeX;
+    const suctionY = boardRect.top + holeY;
+    showBlackHole(holeX, holeY);
+
+    for (const cell of result.cells) {
+      const key = keyOf(cell.row, cell.col);
+      const tile = tileEls.get(key);
+      state.board[cell.row][cell.col] = null;
+      tileEls.delete(key);
+      if (!tile) continue;
+      const rect = tile.getBoundingClientRect();
+      tile.style.setProperty(
+        "--hole-dx",
+        `${suctionX - (rect.left + rect.width / 2)}px`
+      );
+      tile.style.setProperty(
+        "--hole-dy",
+        `${suctionY - (rect.top + rect.height / 2)}px`
+      );
+      tile.classList.add("is-sucked");
+      setTimeout(() => {
+        if (tile.isConnected) tile.remove();
+      }, 620);
+    }
+
+    state.remaining = Math.max(0, state.remaining - result.removedCount);
+    addActorScore(actor, result.removedCount);
+    renderHud();
+    if (actor === "ai") {
+      setStatus(
+        `电脑发动${character.skillName}！吸入了 ${result.removedCount} 个方块`,
+        "warn"
+      );
+      showToast(
+        `电脑 · ${character.name} · ${character.skillName} · ${result.removedCount} 块`,
+        "warn",
+        1600
+      );
+    } else {
+      setStatus(
+        `${character.skillName}！随机吸入了 ${result.removedCount} 个相邻方块`,
+        "info"
+      );
+      showToast(
+        `${character.name}技能 · ${character.skillName} · ${result.removedCount} 块`,
+        "ok",
+        1600
       );
     }
     scheduleActorSkillEnd(actor);
@@ -1703,7 +2129,7 @@
       tileEls.delete(key);
       return;
     }
-    tile.classList.remove("is-selected", "is-hint", "is-invalid");
+    tile.classList.remove("is-selected", "is-invalid");
     tile.setAttribute("aria-pressed", "false");
     tile.classList.add("is-matched");
     if (actor === "ai") tile.classList.add("is-ai");
@@ -1729,23 +2155,23 @@
         (state.selected.row === b.row && state.selected.col === b.col));
     if (selectedWasRemoved) clearSelection();
 
-    state.remaining = Math.max(0, state.remaining - 1);
+    state.remaining = Math.max(0, state.remaining - 2);
     if (actor === "player") {
-      state.playerScore += 1;
+      state.playerScore += 2;
       pulseCard(els.playerCard);
       setStatus(
         state.remaining === 0
-          ? "最后一对也消除了！"
-          : `连接成功 +1 · 场上还剩 ${state.remaining} 对`,
+          ? "最后两块也消除了！"
+          : `连接成功 +2 · 场上还剩 ${state.remaining} 块`,
         "info"
       );
     } else {
-      state.aiScore += 1;
+      state.aiScore += 2;
       pulseCard(els.aiCard);
       setStatus(
         state.remaining === 0
-          ? "电脑消掉了最后一对！"
-          : `电脑抢到一对 · 它已消除 ${state.aiScore} 对`,
+          ? "电脑消掉了最后两块！"
+          : `电脑抢到一对 · 它已消除 ${state.aiScore} 块`,
         "warn"
       );
     }
@@ -1768,7 +2194,9 @@
         return;
       }
       if (state.reshuffling) return;
-      if (!LLK.hasMoves(state.board)) beginReshuffle();
+      if (!LLK.hasMoves(state.board)) {
+        finishGame("deadlock");
+      }
     }, 480);
   }
 
@@ -1872,17 +2300,21 @@
 
   function aiTakeTurn() {
     if (state.status !== "playing" || state.reshuffling) return;
+    if (performance.now() < state.aiLockUntil) {
+      scheduleAI(Math.max(80, state.aiLockUntil - performance.now() + 40));
+      return;
+    }
     if (state.remaining <= 0) return;
 
     const allMoves = LLK.findAvailableMoves(state.board);
     if (allMoves.length === 0) {
-      beginReshuffle();
+      finishGame("deadlock");
       return;
     }
 
-    const moves = filterMovesOutsideGuard(allMoves, getAiGuardedCells());
+    const moves = filterMovesOutsideGuard(allMoves, getAiBlockedCells());
     if (!moves.length) {
-      // 当前所有可消组合都含有玩家刚分裂出的方块，稍后再行动。
+      // 当前所有可消组合都含有分裂保护格或蛛网格，稍后再行动。
       scheduleAI(650);
       return;
     }
@@ -1898,8 +2330,149 @@
     }
   }
 
+  function onAppPointerUp(event) {
+    if (event.pointerType === "mouse") return;
+    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    if (
+      event.target.closest(
+        ".overlay, .topbar, .hud, button:not(.tile), a, input, label"
+      )
+    ) {
+      lastBoardTap = { time: 0, x: 0, y: 0, cell: "" };
+      return;
+    }
+
+    const now = performance.now();
+    const tile = event.target.closest(".tile");
+    const cellKey = tile
+      ? `${tile.dataset.row || ""}:${tile.dataset.col || ""}`
+      : "";
+    const dx = event.clientX - lastBoardTap.x;
+    const dy = event.clientY - lastBoardTap.y;
+    const sameCell = cellKey && lastBoardTap.cell
+      ? cellKey === lastBoardTap.cell
+      : !cellKey && !lastBoardTap.cell && dx * dx + dy * dy <= 400;
+    const isDoubleTap = now - lastBoardTap.time <= 330 && sameCell;
+    if (!isDoubleTap) {
+      lastBoardTap = {
+        time: now,
+        x: event.clientX,
+        y: event.clientY,
+        cell: cellKey,
+      };
+      return;
+    }
+    lastBoardTap = { time: 0, x: 0, y: 0, cell: "" };
+    if (
+      state.status !== "playing" ||
+      state.castingSkill ||
+      state.reshuffling
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (!state.skillReady) {
+      setStatus("技能还没充满，先继续消除", "warn");
+      showToast("技能充能中，先继续消除", "warn", 900);
+      return;
+    }
+    state.ignoreTileClicksUntil = performance.now() + 380;
+    triggerSkill(false);
+  }
+
+  function playClickSound() {
+    const sound = els.clickSound;
+    if (!sound) return;
+    try {
+      sound.currentTime = 0;
+      const played = sound.play();
+      if (played && typeof played.catch === "function") {
+        played.catch(() => {});
+      }
+    } catch (error) {
+      // 某些浏览器会阻止音频播放，不影响游戏。
+    }
+  }
+
+  function playPauseSound() {
+    const sound = els.pauseSound;
+    if (!sound) return;
+    try {
+      sound.currentTime = 0;
+      sound.volume = 0.55;
+      const played = sound.play();
+      if (played && typeof played.catch === "function") {
+        played.catch(() => {});
+      }
+    } catch (error) {
+      // 忽略音频播放失败。
+    }
+  }
+
+  function cancelBackgroundFade() {
+    clearInterval(state.bgFadeTimer);
+    state.bgFadeTimer = null;
+  }
+
+  function playBackgroundMusic(restart) {
+    const music = els.bgMusic;
+    if (!music) return;
+    cancelBackgroundFade();
+    try {
+      music.volume = BGM_VOLUME;
+      if (restart) music.currentTime = 0;
+      const played = music.play();
+      if (played && typeof played.catch === "function") {
+        played.catch(() => {});
+      }
+    } catch (error) {
+      // 背景音乐被浏览器拦截时，游戏照常进行。
+    }
+  }
+
+  function lowerBackgroundMusic() {
+    if (!els.bgMusic) return;
+    cancelBackgroundFade();
+    els.bgMusic.volume = BGM_VOLUME * BGM_PAUSE_FACTOR;
+  }
+
+  function fadeBackgroundMusic(duration) {
+    const music = els.bgMusic;
+    if (!music) return;
+    cancelBackgroundFade();
+    if (music.paused) {
+      music.volume = BGM_VOLUME;
+      return;
+    }
+    const startVolume = music.volume;
+    const startedAt = performance.now();
+    const length = Math.max(120, typeof duration === "number" ? duration : 900);
+    state.bgFadeTimer = setInterval(() => {
+      const progress = Math.min(1, (performance.now() - startedAt) / length);
+      music.volume = Math.max(0, startVolume * (1 - progress));
+      if (progress >= 1) {
+        cancelBackgroundFade();
+        music.pause();
+        music.volume = BGM_VOLUME;
+      }
+    }, 40);
+  }
+
+  function stopBackgroundMusic() {
+    if (!els.bgMusic) return;
+    cancelBackgroundFade();
+    try {
+      els.bgMusic.pause();
+      els.bgMusic.currentTime = 0;
+      els.bgMusic.volume = BGM_VOLUME;
+    } catch (error) {
+      // 忽略。
+    }
+  }
+
   function onTileClick(event) {
     if (state.status !== "playing" || state.reshuffling) return;
+    if (performance.now() < state.ignoreTileClicksUntil) return;
     const tile = event.target.closest(".tile");
     if (!tile || !els.tileLayer.contains(tile)) return;
 
@@ -1908,6 +2481,13 @@
     if (!Number.isInteger(row) || !Number.isInteger(col)) return;
     const color = state.board[row] && state.board[row][col];
     if (color === null || color === undefined) return;
+    playClickSound();
+    const webOwner = getWebCellOwner(row, col);
+    if (webOwner && webOwner !== "player") {
+      setStatus("敌方蛛网缠绕，这个方块暂时不能点击", "warn");
+      showToast("等敌方蛛网消失后再点它", "warn", 900);
+      return;
+    }
 
     if (!state.selected) {
       selectTile(row, col);
@@ -1958,54 +2538,6 @@
     performMatch(first, { row, col }, path, "player");
   }
 
-  function useHint() {
-    if (state.status !== "playing" || state.reshuffling) return;
-    if (state.hintsLeft <= 0) {
-      setStatus("本局 3 次提示已经用完，靠眼力继续吧", "warn");
-      showToast("本局提示已用完", "warn", 1200);
-      return;
-    }
-    if (performance.now() < state.hintCooldownUntil) return;
-    const moves = LLK.findAvailableMoves(state.board);
-    if (moves.length === 0) {
-      beginReshuffle();
-      return;
-    }
-
-    state.hintsLeft -= 1;
-    clearSelection();
-    const move = moves[Math.floor(Math.random() * moves.length)];
-    const first = tileEls.get(keyOf(move.a.row, move.a.col));
-    const second = tileEls.get(keyOf(move.b.row, move.b.col));
-    for (const element of [first, second]) {
-      if (!element) continue;
-      element.classList.remove("is-hint");
-      void element.offsetWidth;
-      element.classList.add("is-hint");
-    }
-    setTimeout(() => {
-      for (const element of [first, second]) {
-        if (element && element.isConnected) element.classList.remove("is-hint");
-      }
-    }, 1650);
-    setStatus(
-      `提示：闪动的这一对可以连接 · 本局还剩 ${state.hintsLeft} 次`,
-      "info"
-    );
-    showToast(
-      state.hintsLeft > 0
-        ? `提示已标记 · 还剩 ${state.hintsLeft} 次`
-        : "这就是最后一次提示，加油！",
-      "ok",
-      1300
-    );
-
-    state.hintCooldownUntil = performance.now() + HINT_COOLDOWN_MS;
-    updateControls();
-    clearTimeout(state.hintCooldownTimer);
-    state.hintCooldownTimer = setTimeout(updateControls, HINT_COOLDOWN_MS + 30);
-  }
-
   function tick() {
     if (state.status !== "playing") return;
     const now = performance.now();
@@ -2042,13 +2574,18 @@
       Math.max(0, state.timeLimit - state.timeLeft)
     );
     clearRoundTimers(false);
+    fadeBackgroundMusic(900);
     state.castingSkill = false;
     state.aiCastingSkill = false;
     clearSelection();
     updateClock();
     renderHud();
     setStatus(
-      reason === "timeout" ? "时间到，正在结算…" : "棋盘清空，正在结算…",
+      reason === "timeout"
+        ? "时间到，正在结算…"
+        : reason === "deadlock"
+          ? "没有可消除的组合，正在结算…"
+          : "棋盘清空，正在结算…",
       "warn"
     );
     stopAiProgress(true);
@@ -2063,26 +2600,35 @@
     const player = state.playerScore;
     const ai = state.aiScore;
     const result = player > ai ? "win" : player < ai ? "lose" : "draw";
+    const reason = state.endReason;
 
     els.endModal.dataset.result = result;
     els.resultBadge.textContent = result === "win" ? "胜" : result === "lose" ? "负" : "和";
     els.resultTitle.textContent =
       result === "win" ? "你赢了" : result === "lose" ? "电脑赢了" : "平局";
-    if (result === "win") {
+    if (reason === "deadlock") {
+      if (result === "win") {
+        els.resultSub.textContent = `棋盘上已没有可消除的组合，你以 ${player} : ${ai} 领先电脑。`;
+      } else if (result === "lose") {
+        els.resultSub.textContent = `棋盘上已没有可消除的组合，电脑以 ${ai} : ${player} 领先。`;
+      } else {
+        els.resultSub.textContent = `棋盘上已没有可消除的组合，双方都消除了 ${player} 块。`;
+      }
+    } else if (result === "win") {
       els.resultSub.textContent =
-        state.endReason === "timeout"
+        reason === "timeout"
           ? `时间到，你以 ${player} : ${ai} 领先电脑。节奏拿捏得不错。`
           : `棋盘清空，你以 ${player} : ${ai} 抢下更多色块。`;
     } else if (result === "lose") {
       els.resultSub.textContent =
-        state.endReason === "timeout"
+        reason === "timeout"
           ? `时间到，电脑以 ${ai} : ${player} 领先。再来一局，把节奏抢回来。`
           : `电脑以 ${ai} : ${player} 赢下这局。下一把试试更快出手。`;
     } else {
       els.resultSub.textContent =
-        state.endReason === "timeout"
-          ? `时间到，双方都消除了 ${player} 对。加赛一局分胜负？`
-          : `棋盘清空，双方都消除了 ${player} 对。势均力敌。`;
+        reason === "timeout"
+          ? `时间到，双方都消除了 ${player} 块。加赛一局分胜负？`
+          : `棋盘清空，双方都消除了 ${player} 块。势均力敌。`;
     }
 
     els.finalPlayerScore.textContent = String(player);
@@ -2110,8 +2656,6 @@
     state.reshuffleTimer = null;
     clearTimeout(state.endTimer);
     state.endTimer = null;
-    clearTimeout(state.hintCooldownTimer);
-    state.hintCooldownTimer = null;
     clearTimeout(state.castTimer);
     state.castTimer = null;
     clearTimeout(state.aiCastTimer);
@@ -2121,6 +2665,7 @@
     clearTimeout(state.vortexTimer);
     state.vortexTimer = null;
     clearSkillEffects();
+    clearWebs();
     state.reshuffling = false;
     if (stopProgress !== false) stopAiProgress(true);
   }
@@ -2128,9 +2673,11 @@
   function resetStateForRound() {
     state.selected = null;
     state.splitGuards.clear();
+    clearWebs();
+    state.aiLockUntil = 0;
+    state.ignoreTileClicksUntil = 0;
     state.playerScore = 0;
     state.aiScore = 0;
-    state.hintsLeft = HINT_LIMIT;
     state.skillCharge = 0;
     state.skillReady = false;
     state.castingSkill = false;
@@ -2148,7 +2695,6 @@
     state.helpFromStart = false;
     state.settingsAutoPaused = false;
     state.settingsFromStart = false;
-    state.hintCooldownUntil = 0;
   }
 
   function startGame(options) {
@@ -2179,7 +2725,7 @@
     resolveAiCharacter();
 
     state.board = createBoard();
-    state.remaining = LLK.countRemaining(state.board) / 2;
+    state.remaining = LLK.countRemaining(state.board);
     state.status = "playing";
     state.deadline = performance.now() + state.timeLimit * 1000;
     state.timeLeft = state.timeLimit;
@@ -2201,6 +2747,7 @@
     state.timerId = setInterval(tick, 100);
     scheduleAI(currentAiInterval() + 900);
     updateControls();
+    playBackgroundMusic(true);
   }
 
   function preparePreview() {
@@ -2223,12 +2770,13 @@
     updateLayoutCards();
 
     state.board = createBoard();
-    state.remaining = LLK.countRemaining(state.board) / 2;
+    state.remaining = LLK.countRemaining(state.board);
     state.timeLeft = MATCH_SECONDS;
     renderBoard("deal");
     renderHud();
     setStatus("点击两个同色色块，把它们连起来", "info");
     stopAiProgress(true);
+    stopBackgroundMusic();
   }
 
   function pauseGame(options) {
@@ -2248,7 +2796,11 @@
     updateClock();
     updateControls();
     setStatus("已暂停 · 计时与电脑都已停下", "warn");
-    if (!silent) showOverlay(els.pauseOverlay);
+    lowerBackgroundMusic();
+    if (!silent) {
+      playPauseSound();
+      showOverlay(els.pauseOverlay);
+    }
     return true;
   }
 
@@ -2262,6 +2814,7 @@
     state.timerId = setInterval(tick, 100);
     updateControls();
     setStatus("继续对战，抢在电脑前消除！", "info");
+    playBackgroundMusic(false);
     if (state.remaining <= 0) {
       finishGame("cleared");
       return;
@@ -2423,12 +2976,6 @@
       return;
     }
 
-    if (key === "h") {
-      useHint();
-      event.preventDefault();
-      return;
-    }
-
     if (key === "p") {
       if (state.status === "playing") {
         pauseGame();
@@ -2442,9 +2989,9 @@
 
   function bindEvents() {
     els.tileLayer.addEventListener("click", onTileClick);
+    els.app.addEventListener("pointerup", onAppPointerUp);
 
     els.startBtn.addEventListener("click", () => startGame({ usePreview: true }));
-    els.hintBtn.addEventListener("click", useHint);
     els.skillBtn.addEventListener("click", () => triggerSkill(false));
     els.pauseBtn.addEventListener("click", () => {
       if (state.status === "playing") pauseGame();
@@ -2517,6 +3064,9 @@
 
   function init() {
     setupBoardGeometry();
+    if (els.clickSound) els.clickSound.volume = 0.45;
+    if (els.pauseSound) els.pauseSound.volume = 0.55;
+    if (els.bgMusic) els.bgMusic.volume = BGM_VOLUME;
     buildThemeCards();
     buildLayoutCards();
     buildCharacterCards();
