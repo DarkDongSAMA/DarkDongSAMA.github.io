@@ -15,7 +15,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const DEFAULT_SIZE = Object.freeze({ cols: 10, rows: 8, colors: 8 });
+  const DEFAULT_SIZE = Object.freeze({ cols: 12, rows: 10, colors: 8 });
 
   function shuffle(items, rng) {
     const random = typeof rng === "function" ? rng : Math.random;
@@ -61,6 +61,51 @@
       rows: board.length,
       cols: board[0] ? board[0].length : 0,
     };
+  }
+
+  /**
+   * 按棋谱蒙版生成棋盘。蒙版中的 1 为色块格，0 为空洞。
+   * 空洞不生成色块，但寻路时可以作为空格通过。
+   */
+  function createBoardFromMask(mask, colorCount, rng) {
+    if (!Array.isArray(mask) || mask.length < 2 || !Array.isArray(mask[0])) {
+      throw new Error("棋谱蒙版格式不正确。");
+    }
+    const rows = mask.length;
+    const cols = mask[0].length;
+    if (cols < 2) throw new Error("棋谱至少需要 2 列。");
+    for (const row of mask) {
+      if (!Array.isArray(row) || row.length !== cols) {
+        throw new Error("棋谱每一行的长度必须一致。");
+      }
+    }
+
+    const positions = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (mask[row][col]) positions.push({ row, col });
+      }
+    }
+    if (positions.length < 2) throw new Error("棋谱至少需要两个色块。");
+    if (positions.length % 2 !== 0) throw new Error("棋谱的色块数必须是偶数。");
+
+    const paletteSize = Number.isInteger(colorCount) ? colorCount : DEFAULT_SIZE.colors;
+    if (paletteSize < 1) throw new Error("至少需要一种颜色。");
+
+    const bag = [];
+    const pairCount = positions.length / 2;
+    for (let i = 0; i < pairCount; i += 1) {
+      const color = i % paletteSize;
+      bag.push(color, color);
+    }
+    shuffle(bag, rng);
+
+    const board = Array.from({ length: rows }, () => Array(cols).fill(null));
+    for (let i = 0; i < positions.length; i += 1) {
+      const position = positions[i];
+      board[position.row][position.col] = bag[i];
+    }
+    return board;
   }
 
   function isInside(board, row, col) {
@@ -371,6 +416,310 @@
     return board;
   }
 
+  /** 按棋谱蒙版生成初始棋盘，并保证开局至少有一对可消除。 */
+  function createPlayableBoardFromMask(mask, colorCount, rng) {
+    const board = createBoardFromMask(mask, colorCount, rng);
+    if (!hasMoves(board)) {
+      if (!reshuffleColors(board, rng)) {
+        throw new Error("无法生成可解棋谱。");
+      }
+    }
+    return board;
+  }
+
+  /**
+   * 重排剩余色块，并让约 1/4 的色块组成“同色并列对”。
+   * 优先使用水平相邻格，水平不够时用垂直相邻格补齐。
+   * 返回新棋盘、实际并列对数量和被重排的色块总数。
+   */
+  function rearrangeWithAdjacentPairs(board, mask, options) {
+    const opts = options || {};
+    const random = typeof opts.rng === "function" ? opts.rng : Math.random;
+    const ratio = typeof opts.ratio === "number" ? opts.ratio : 0.25;
+
+    const rows = board.length;
+    const cols = board[0] ? board[0].length : 0;
+    if (!Array.isArray(mask) || mask.length !== rows) {
+      throw new Error("重排蒙版与棋盘行数不一致。");
+    }
+    for (const row of mask) {
+      if (!Array.isArray(row) || row.length !== cols) {
+        throw new Error("重排蒙版与棋盘列数不一致。");
+      }
+    }
+
+    const tileCount = countRemaining(board);
+    if (tileCount < 2) return null;
+
+    const activeCells = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (mask[row][col]) activeCells.push({ row, col });
+      }
+    }
+    if (activeCells.length < tileCount) {
+      throw new Error("重排蒙版的活动格不足。");
+    }
+
+    const counts = colorCounts(board);
+    const pairColors = [];
+    for (const [color, count] of counts) {
+      for (let i = 0; i < Math.floor(count / 2); i += 1) pairColors.push(color);
+    }
+    if (!pairColors.length) return null;
+
+    const desiredPairs = Math.max(1, Math.floor((tileCount * ratio) / 2));
+    const targetPairs = Math.min(
+      pairColors.length,
+      desiredPairs,
+      Math.floor(activeCells.length / 2)
+    );
+
+    // 先尝试水平并列；不够时再用垂直相邻格补齐。
+    const horizontal = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols - 1; col += 1) {
+        if (mask[row][col] && mask[row][col + 1]) {
+          horizontal.push({
+            a: { row, col },
+            b: { row, col: col + 1 },
+          });
+        }
+      }
+    }
+    shuffle(horizontal, random);
+
+    const selectedPairs = [];
+    const usedCells = new Set();
+    const takePair = (pair) => {
+      const aKey = `${pair.a.row}:${pair.a.col}`;
+      const bKey = `${pair.b.row}:${pair.b.col}`;
+      if (usedCells.has(aKey) || usedCells.has(bKey)) return false;
+      usedCells.add(aKey);
+      usedCells.add(bKey);
+      selectedPairs.push(pair);
+      return true;
+    };
+
+    for (const pair of horizontal) {
+      if (selectedPairs.length >= targetPairs) break;
+      takePair(pair);
+    }
+
+    if (selectedPairs.length < targetPairs) {
+      const vertical = [];
+      for (let row = 0; row < rows - 1; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          if (mask[row][col] && mask[row + 1][col]) {
+            vertical.push({
+              a: { row, col },
+              b: { row: row + 1, col },
+            });
+          }
+        }
+      }
+      shuffle(vertical, random);
+      for (const pair of vertical) {
+        if (selectedPairs.length >= targetPairs) break;
+        takePair(pair);
+      }
+    }
+
+    if (!selectedPairs.length) return null;
+
+    shuffle(pairColors, random);
+    const pairedColors = pairColors.slice(0, selectedPairs.length);
+
+    const remainingColors = [];
+    for (const [color, count] of counts) {
+      for (let i = 0; i < count; i += 1) remainingColors.push(color);
+    }
+    for (const color of pairedColors) {
+      for (let removed = 0; removed < 2; removed += 1) {
+        const index = remainingColors.indexOf(color);
+        if (index >= 0) remainingColors.splice(index, 1);
+      }
+    }
+    shuffle(remainingColors, random);
+
+    const restCells = shuffle(
+      activeCells.filter(
+        (cell) => !usedCells.has(`${cell.row}:${cell.col}`)
+      ),
+      random
+    );
+    const restNeeded = tileCount - selectedPairs.length * 2;
+    if (remainingColors.length !== restNeeded || restCells.length < restNeeded) {
+      throw new Error("重排时色块数量不一致。");
+    }
+
+    const nextBoard = Array.from({ length: rows }, () => Array(cols).fill(null));
+    for (let i = 0; i < selectedPairs.length; i += 1) {
+      const pair = selectedPairs[i];
+      const color = pairedColors[i];
+      nextBoard[pair.a.row][pair.a.col] = color;
+      nextBoard[pair.b.row][pair.b.col] = color;
+    }
+    for (let i = 0; i < restNeeded; i += 1) {
+      const cell = restCells[i];
+      nextBoard[cell.row][cell.col] = remainingColors[i];
+    }
+
+    if (countRemaining(nextBoard) !== tileCount) {
+      throw new Error("重排后色块数量不守恒。");
+    }
+    if (!hasMoves(nextBoard)) {
+      reshuffleColors(nextBoard, random);
+    }
+
+    return {
+      board: nextBoard,
+      pairCount: selectedPairs.length,
+      targetPairCount: targetPairs,
+      tileCount,
+    };
+  }
+
+  /**
+   * 随机挑选最多 count 个方块，让它们各自在原地旁边的一个空格生成同色方块。
+   * 为保持每种颜色数量仍为偶数，同一种颜色只会分裂偶数次（2 或 4 次）。
+   * 返回新棋盘和分裂信息；没有可用空间时返回 null。
+   */
+  function splitTilesIntoAdjacentPairs(board, mask, options) {
+    const opts = options || {};
+    const random = typeof opts.rng === "function" ? opts.rng : Math.random;
+    const desiredSplits = Number.isInteger(opts.count) ? opts.count : 4;
+
+    const rows = board.length;
+    const cols = board[0] ? board[0].length : 0;
+    if (!Array.isArray(mask) || mask.length !== rows) {
+      throw new Error("分裂蒙版与棋盘行数不一致。");
+    }
+    for (const row of mask) {
+      if (!Array.isArray(row) || row.length !== cols) {
+        throw new Error("分裂蒙版与棋盘列数不一致。");
+      }
+    }
+    if (desiredSplits < 2) return null;
+
+    const emptyAt = (row, col) =>
+      row >= 0 &&
+      row < rows &&
+      col >= 0 &&
+      col < cols &&
+      Boolean(mask[row][col]) &&
+      board[row][col] === null;
+
+    const groups = new Map();
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const color = board[row][col];
+        if (color === null || color === undefined) continue;
+        const emptyNeighbors = [];
+        for (const [dy, dx] of [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ]) {
+          const nextRow = row + dy;
+          const nextCol = col + dx;
+          if (emptyAt(nextRow, nextCol)) {
+            emptyNeighbors.push({ row: nextRow, col: nextCol });
+          }
+        }
+        if (!emptyNeighbors.length) continue;
+        if (!groups.has(color)) groups.set(color, []);
+        groups.get(color).push({ row, col, color, emptyNeighbors });
+      }
+    }
+    if (!groups.size) return null;
+
+    const cellKey = (cell) => `${cell.row}:${cell.col}`;
+
+    const buildPlan = (color, count, reserved, usedSources) => {
+      const cells = shuffle(groups.get(color).slice(), random);
+      const placements = [];
+      for (const cell of cells) {
+        if (placements.length >= count) break;
+        const sourceKey = cellKey(cell);
+        if (usedSources.has(sourceKey)) continue;
+        const targets = shuffle(cell.emptyNeighbors.slice(), random).filter(
+          (target) => !reserved.has(cellKey(target))
+        );
+        if (!targets.length) continue;
+        const target = targets[0];
+        reserved.add(cellKey(target));
+        usedSources.add(sourceKey);
+        placements.push({
+          source: { row: cell.row, col: cell.col },
+          target,
+          color,
+        });
+      }
+      return placements;
+    };
+
+    const colors = shuffle([...groups.keys()], random);
+    let chosen = [];
+
+    // 优先让同一种颜色分裂 4 次。
+    if (desiredSplits >= 4) {
+      for (const color of colors) {
+        const reserved = new Set();
+        const used = new Set();
+        const placements = buildPlan(color, 4, reserved, used);
+        if (placements.length === 4) {
+          chosen = placements;
+          break;
+        }
+      }
+    }
+
+    // 否则选两种颜色，各分裂 2 次。
+    if (!chosen.length && desiredSplits >= 4) {
+      for (let i = 0; i < colors.length && !chosen.length; i += 1) {
+        for (let j = i + 1; j < colors.length; j += 1) {
+          const reserved = new Set();
+          const used = new Set();
+          const first = buildPlan(colors[i], 2, reserved, used);
+          if (first.length !== 2) continue;
+          const second = buildPlan(colors[j], 2, reserved, used);
+          if (second.length !== 2) continue;
+          chosen = [...first, ...second];
+          break;
+        }
+      }
+    }
+
+    // 最后退而求其次，只分裂 2 次。
+    if (!chosen.length) {
+      for (const color of colors) {
+        const reserved = new Set();
+        const used = new Set();
+        const placements = buildPlan(color, 2, reserved, used);
+        if (placements.length === 2) {
+          chosen = placements;
+          break;
+        }
+      }
+    }
+
+    if (!chosen.length) return null;
+
+    const nextBoard = board.map((row) => row.slice());
+    for (const split of chosen) {
+      nextBoard[split.target.row][split.target.col] = split.color;
+    }
+
+    return {
+      board: nextBoard,
+      splits: chosen,
+      addedTiles: chosen.length,
+      tileCount: countRemaining(nextBoard),
+    };
+  }
+
   function removePair(board, a, b) {
     if (!isInside(board, a.row, a.col) || !isInside(board, b.row, b.col)) {
       return false;
@@ -387,7 +736,11 @@
     DEFAULT_SIZE,
     shuffle,
     createBoard,
+    createBoardFromMask,
     createPlayableBoard,
+    createPlayableBoardFromMask,
+    rearrangeWithAdjacentPairs,
+    splitTilesIntoAdjacentPairs,
     boardSize,
     countRemaining,
     colorCounts,

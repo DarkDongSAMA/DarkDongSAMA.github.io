@@ -26,6 +26,7 @@
       <div class="top-actions">
         <span class="mode-pill"><i></i>人机对战</span>
         <button class="text-btn" id="helpBtn" type="button">玩法</button>
+        <button class="text-btn" id="settingsBtn" type="button">设置</button>
         <button class="text-btn" id="pauseBtn" type="button" disabled>暂停</button>
       </div>
     </header>
@@ -33,11 +34,12 @@
     <main class="game">
       <section class="hud" aria-label="对战计分板">
         <div class="fighter fighter--player" id="playerCard">
-          <div class="avatar avatar--player" aria-hidden="true">你</div>
+          <div class="avatar avatar--player" id="playerAvatar" aria-hidden="true">1</div>
           <div class="fighter-meta">
-            <span class="fighter-name">玩家</span>
+            <span class="fighter-name" id="playerName">卡比</span>
             <span class="score-line"><strong class="score" id="playerScore">0</strong><span class="unit">对</span></span>
           </div>
+          <span class="skill-progress" aria-hidden="true"><i id="skillBar"></i></span>
         </div>
 
         <div class="clock" aria-label="剩余时间">
@@ -46,25 +48,26 @@
             <span class="clock-label">剩余时间</span>
           </div>
           <div class="clock-bottom">
-            <span>场上 <b id="remaining">40</b> 对</span>
+            <span>场上 <b id="remaining">60</b> 对</span>
             <span class="clock-track" aria-hidden="true"><i id="timerBar"></i></span>
           </div>
         </div>
 
         <div class="fighter fighter--ai" id="aiCard">
-          <div class="avatar avatar--ai" aria-hidden="true">AI</div>
+          <div class="avatar avatar--ai" id="aiAvatar" aria-hidden="true">🍑</div>
           <div class="fighter-meta">
-            <span class="fighter-name">电脑</span>
+            <span class="fighter-name" id="aiName">电脑 · 卡比</span>
             <span class="score-line"><strong class="score" id="aiScore">0</strong><span class="unit">对</span></span>
           </div>
+          <span class="ai-skill-progress" aria-hidden="true"><i id="aiSkillBar"></i></span>
           <span class="ai-progress" aria-hidden="true"><i id="aiProgress"></i></span>
         </div>
       </section>
 
       <section class="board-panel" aria-label="连连看棋盘">
         <div class="board-topline">
-          <span>匹配区</span>
-          <span>同色 · 最多 2 个转弯</span>
+          <span id="layoutLabel">棋谱 · 满堂阵</span>
+          <span id="boardMeta">120 块 · 最多 2 弯</span>
         </div>
 
         <div class="board" id="board">
@@ -78,52 +81,86 @@
             <span class="status-dot" aria-hidden="true"></span>
             <span id="statusText">点击两个同色色块，把它们连起来</span>
           </div>
-          <button class="hint-btn" id="hintBtn" type="button" disabled>
-            <span>提示</span><kbd>H</kbd>
-          </button>
+          <div class="board-actions">
+            <button class="skill-btn" id="skillBtn" type="button" disabled aria-label="技能充能中">
+              <span class="skill-icon" aria-hidden="true">✦</span>
+              <span class="skill-name" id="skillNameLabel">食材旋涡</span>
+              <span class="skill-name-short">技能</span>
+              <span class="skill-state" id="skillState">5.0s</span>
+              <kbd>E</kbd>
+            </button>
+            <button class="hint-btn" id="hintBtn" type="button" disabled>
+              <span>提示</span><b class="hint-count" id="hintCount">3</b><kbd>H</kbd>
+            </button>
+          </div>
         </div>
       </section>
 
       <footer class="footnote">
         <span class="footnote-rule" aria-hidden="true"></span>
-        60 秒限时 · 电脑会同时抢消除 · 无解时自动重排
+        60 秒限时 · 玩家技能 5 秒充能 · 电脑技能 5–7 秒随机释放 · 每局 3 次提示
       </footer>
     </main>
   </div>
+
+  <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+  <div class="skill-vortex" id="skillVortex" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="skill-impact" id="skillImpact" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+  <div class="skill-slash" id="skillSlash" aria-hidden="true"><i></i><i></i><i></i></div>
 
   <!-- 开始 -->
   <div class="overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
     <div class="modal start-modal">
       <div class="eyebrow"><span></span>COLOR MATCH · 1 VS 1</div>
       <div class="logo-tiles" aria-hidden="true">
-        <i style="--c:#ff5a5f;--r:-8deg"></i>
-        <i style="--c:#ffd60a;--r:6deg"></i>
-        <i style="--c:#2ecc71;--r:-5deg"></i>
-        <i style="--c:#4f7cff;--r:9deg"></i>
+        <i style="--c:#ff5a5f;--r:-8deg">🍎</i>
+        <i style="--c:#ffd60a;--r:6deg">🍋</i>
+        <i style="--c:#2ecc71;--r:-5deg">🥦</i>
+        <i style="--c:#4f7cff;--r:9deg">🍇</i>
       </div>
       <h1 id="startTitle">纯色连连看</h1>
-      <p class="start-lead">和电脑抢时间，用最多两次转弯的线连接同色色块。</p>
+      <p class="start-lead">每局随机棋谱，和电脑抢时间。最多两弯，连接同色块。</p>
 
-      <div class="rule-strip" aria-label="游戏规则">
-        <span><b>①</b> 同色配对</span>
-        <span><b>②</b> 最多两弯</span>
-        <span><b>③</b> 限时抢分</span>
+      <div class="theme-block">
+        <span class="theme-label">主题</span>
+        <div class="theme-grid" id="themeGroup" role="group" aria-label="选择方块主题"></div>
+      </div>
+
+      <div class="layout-block">
+        <div class="setting-head">
+          <span>棋谱</span>
+          <small>随机开局 · 形状与色块数不同</small>
+        </div>
+        <div class="layout-grid" id="layoutGroup" role="group" aria-label="选择棋谱"></div>
+      </div>
+
+      <div class="character-block">
+        <div class="setting-head">
+          <span>出战角色</span>
+          <button class="inline-settings" id="startSettingsBtn" type="button">玩家自动释放</button>
+        </div>
+        <div class="character-grid" id="characterGroup" role="group" aria-label="选择你的角色"></div>
+        <div class="ai-role-row">
+          <span class="ai-role-label">电脑</span>
+          <div class="ai-character-grid" id="aiCharacterGroup" role="group" aria-label="选择电脑角色"></div>
+        </div>
+        <p class="role-summary" id="roleSummary">你的技能：食材旋涡 · 电脑：随机角色</p>
       </div>
 
       <div class="difficulty-block">
-        <div class="difficulty-head">
+        <div class="setting-head">
           <span>电脑难度</span>
-          <small>每档只改变电脑出手速度</small>
+          <small>出手速度与技能发动概率</small>
         </div>
         <div class="segmented" id="difficultyGroup" role="group" aria-label="选择电脑难度">
           <button type="button" data-difficulty="easy">
-            <strong>轻松</strong><span>4.4 秒 / 手</span>
+            <strong>春风</strong><span>4.4 秒/手 · 无技能</span>
           </button>
           <button type="button" data-difficulty="normal" class="is-active" aria-pressed="true">
-            <strong>标准</strong><span>3.0 秒 / 手</span>
+            <strong>标准</strong><span>3.0 秒/手 · 50% 技能</span>
           </button>
           <button type="button" data-difficulty="hard">
-            <strong>挑战</strong><span>1.9 秒 / 手</span>
+            <strong>狂野</strong><span>1.9 秒/手 · 必放技能</span>
           </button>
         </div>
       </div>
@@ -131,7 +168,7 @@
       <button class="primary-btn start-btn" id="startBtn" type="button">
         <span>开始对战</span><span class="btn-arrow" aria-hidden="true">→</span>
       </button>
-      <p class="start-note">点击色块操作 · 按 <kbd>H</kbd> 获取提示 · 按 <kbd>P</kbd> 暂停</p>
+      <p class="start-note">点击色块操作 · 按 <kbd>E</kbd> 释放技能 · 每局 3 次提示</p>
     </div>
   </div>
 
@@ -144,6 +181,7 @@
       <p>计时与电脑都已暂停，准备好再继续。</p>
       <button class="primary-btn" id="resumeBtn" type="button">继续游戏</button>
       <button class="ghost-btn" id="pauseRestartBtn" type="button">重新开始本局</button>
+      <button class="ghost-btn" id="pauseMenuBtn" type="button">返回主菜单</button>
     </div>
   </div>
 
@@ -154,12 +192,45 @@
       <div class="eyebrow"><span></span>HOW TO PLAY</div>
       <h2 id="helpTitle">怎么玩</h2>
       <ol class="help-list">
+        <li><b>随机棋谱</b><span>每局都会随机出现不同形状、不同色块数量的棋盘，也可以在开局前自选棋谱。</span></li>
         <li><b>选择同色</b><span>依次点击两个颜色相同的色块。</span></li>
         <li><b>连起来</b><span>连接路线只能水平或垂直，最多转弯 2 次，也可以从棋盘边缘外绕行。</span></li>
+        <li><b>角色技能</b><span>卡比「食材旋涡」消除 3 对同色食材；帝帝帝大王「震地重排」重排方块，让约 1/4 成对并列；魅塔骑士「裂空斩」随机让最多 4 个方块分裂出相邻同色方块。玩家技能条每 5 秒充满，按 E 触发；电脑技能会在 5–7 秒内随机自动释放。电脑难度会额外影响技能发动概率。</span></li>
         <li><b>抢在电脑前</b><span>你和电脑同时消除。60 秒后，消除对数更多的一方获胜。</span></li>
-        <li><b>别担心卡住</b><span>场上没有可消除组合时会自动重排；按 H 可以让一对可消除的色块闪动提示。</span></li>
+        <li><b>提示与重排</b><span>每局最多使用 3 次提示（快捷键 H）；没有可消除组合时，棋盘会自动重排。</span></li>
       </ol>
       <button class="primary-btn" id="helpOkBtn" type="button">明白了</button>
+    </div>
+  </div>
+
+  <!-- 设置 -->
+  <div class="overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
+    <div class="modal settings-modal">
+      <button class="close-btn" id="settingsCloseBtn" type="button" aria-label="关闭设置">×</button>
+      <div class="eyebrow"><span></span>SETTINGS</div>
+      <h2 id="settingsTitle">设置</h2>
+
+      <div class="setting-character">
+        <span class="character-avatar" id="settingCharacterAvatar" aria-hidden="true">🍑</span>
+        <div class="setting-character-info">
+          <strong id="settingCharacterTitle">卡比 · 食材旋涡</strong>
+          <span id="settingCharacterDesc">5 秒充能 · 自动消除最多 3 对同色食材</span>
+        </div>
+      </div>
+
+      <label class="setting-switch-row" for="autoSkillToggle">
+        <span class="setting-switch-copy">
+          <b>玩家技能自动释放</b>
+          <small id="autoSkillDesc">你的技能条充满后自动触发，不需要按 E</small>
+        </span>
+        <span class="switch">
+          <input id="autoSkillToggle" type="checkbox" role="switch" aria-describedby="autoSkillDesc">
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+
+      <p class="setting-note">关闭时，技能条充满后点击「释放」或按 E 手动触发。电脑角色的技能会每 5–7 秒随机自动释放。</p>
+      <button class="primary-btn" id="settingsDoneBtn" type="button">完成</button>
     </div>
   </div>
 
@@ -186,6 +257,7 @@
       </div>
 
       <div class="result-stats">
+        <div><span>棋谱</span><b id="finalLayout">满堂阵</b></div>
         <div><span>本局用时</span><b id="finalTime">01:00</b></div>
         <div><span>难度</span><b id="finalDifficulty">标准</b></div>
         <div><span>电脑节奏</span><b id="finalAiRate">3.0 秒/手</b></div>
@@ -193,11 +265,12 @@
 
       <div class="modal-actions">
         <button class="primary-btn" id="againBtn" type="button">再来一局</button>
-        <button class="ghost-btn" id="changeDifficultyBtn" type="button">调整难度</button>
+        <button class="ghost-btn" id="changeDifficultyBtn" type="button">调整设置</button>
       </div>
     </div>
   </div>
 
+  <script src="layouts.js"></script>
   <script src="logic.js"></script>
   <script src="game.js"></script>
 </body>
