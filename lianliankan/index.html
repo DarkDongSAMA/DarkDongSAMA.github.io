@@ -111,6 +111,7 @@
   <!-- 开始 -->
   <div class="overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
     <div class="modal start-modal">
+      <button class="inline-settings start-help-btn" id="startHelpBtn" type="button" aria-label="查看玩法">玩法</button>
       <div class="eyebrow"><span></span>COLOR MATCH · 1 VS 1</div>
       <div class="logo-tiles" aria-hidden="true">
         <i style="--c:#ff5a5f;--r:-8deg">🍎</i>
@@ -137,9 +138,10 @@
       <div class="character-block">
         <div class="setting-head">
           <span>出战角色</span>
-          <button class="inline-settings" id="startSettingsBtn" type="button">玩家自动释放</button>
+          <button class="inline-settings" id="startSettingsBtn" type="button" aria-pressed="false" title="切换玩家技能自动释放">玩家自动：关</button>
         </div>
         <div class="character-grid" id="characterGroup" role="group" aria-label="选择你的角色"></div>
+        <div class="character-effects" id="characterEffects" role="list" aria-label="角色技能效果"></div>
         <div class="ai-role-row">
           <span class="ai-role-label">电脑</span>
           <div class="ai-character-grid" id="aiCharacterGroup" role="group" aria-label="选择电脑角色"></div>
@@ -195,7 +197,6 @@
         <li><b>随机棋谱</b><span>每局都会随机出现不同形状、不同色块数量的棋盘，也可以在开局前自选棋谱。</span></li>
         <li><b>选择同色</b><span>依次点击两个颜色相同的色块。</span></li>
         <li><b>连起来</b><span>连接路线只能水平或垂直，最多转弯 2 次，也可以从棋盘边缘外绕行。</span></li>
-        <li><b>角色技能</b><span>卡比「食材旋涡」消除 3 对同色食材；帝帝帝大王「震地重排」重排方块，让约 1/4 成对并列；魅塔骑士「裂空斩」随机让最多 4 个方块分裂出相邻同色方块。玩家技能条每 5 秒充满，按 E 触发；电脑技能会在 5–7 秒内随机自动释放。电脑难度会额外影响技能发动概率。</span></li>
         <li><b>抢在电脑前</b><span>你和电脑同时消除。60 秒后，消除对数更多的一方获胜。</span></li>
         <li><b>提示与重排</b><span>每局最多使用 3 次提示（快捷键 H）；没有可消除组合时，棋盘会自动重排。</span></li>
       </ol>

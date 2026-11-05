@@ -88,6 +88,7 @@
       name: "卡比",
       avatar: "🍑",
       skillName: "食材旋涡",
+      effect: "消除最多 3 对同色块",
       cardDescription: "自动消除最多 3 对同色食材",
       settingDescription: "5 秒充能 · 自动消除最多 3 对同色食材",
       accent: "#ff8ab4",
@@ -98,6 +99,7 @@
       name: "帝帝帝大王",
       avatar: "✌️",
       skillName: "震地重排",
+      effect: "重排，约 1/4 成对并列",
       cardDescription: "重排方块，约 1/4 成对并列",
       settingDescription: "5 秒充能 · 重排方块，约 1/4 成对并列",
       accent: "#ffd60a",
@@ -108,6 +110,7 @@
       name: "魅塔骑士",
       avatar: "🫐",
       skillName: "裂空斩",
+      effect: "最多 4 块分裂为同色对",
       cardDescription: "最多 4 个方块分裂出相邻同色块",
       settingDescription: "5 秒充能 · 最多 4 个方块分裂出相邻同色块",
       accent: "#4f72e8",
@@ -165,6 +168,7 @@
     settingsOverlay: $("settingsOverlay"),
     endOverlay: $("endOverlay"),
     startBtn: $("startBtn"),
+    startHelpBtn: $("startHelpBtn"),
     resumeBtn: $("resumeBtn"),
     pauseRestartBtn: $("pauseRestartBtn"),
     pauseMenuBtn: $("pauseMenuBtn"),
@@ -181,6 +185,7 @@
     layoutGroup: $("layoutGroup"),
     themeGroup: $("themeGroup"),
     characterGroup: $("characterGroup"),
+    characterEffects: $("characterEffects"),
     aiCharacterGroup: $("aiCharacterGroup"),
     roleSummary: $("roleSummary"),
     settingCharacterAvatar: $("settingCharacterAvatar"),
@@ -262,6 +267,7 @@
     settingsFromStart: false,
     reshuffling: false,
     helpAutoPaused: false,
+    helpFromStart: false,
     endReason: null,
   };
 
@@ -511,6 +517,22 @@
     els.characterGroup.appendChild(fragment);
     updateCharacterCards();
     updateCharacterUI();
+  }
+
+  function buildCharacterEffects() {
+    if (!els.characterEffects) return;
+    const fragment = document.createDocumentFragment();
+    for (const id of CHARACTER_IDS) {
+      const character = CHARACTERS[id];
+      const item = document.createElement("span");
+      item.dataset.character = id;
+      item.setAttribute("role", "listitem");
+      item.title = `${character.name} · ${character.skillName}：${character.cardDescription}`;
+      item.textContent = character.effect;
+      fragment.appendChild(item);
+    }
+    els.characterEffects.innerHTML = "";
+    els.characterEffects.appendChild(fragment);
   }
 
   function updateCharacterCards() {
@@ -910,8 +932,15 @@
     if (els.startSettingsBtn) {
       els.startSettingsBtn.textContent = state.autoSkill
         ? "玩家自动：开"
-        : "玩家自动释放";
+        : "玩家自动：关";
       els.startSettingsBtn.classList.toggle("is-auto", state.autoSkill);
+      els.startSettingsBtn.setAttribute(
+        "aria-pressed",
+        state.autoSkill ? "true" : "false"
+      );
+      els.startSettingsBtn.title = state.autoSkill
+        ? "点击关闭玩家技能自动释放"
+        : "点击开启玩家技能自动释放";
     }
     if (els.settingsBtn) {
       els.settingsBtn.classList.toggle("is-auto", state.autoSkill);
@@ -2116,6 +2145,7 @@
     state.elapsed = 0;
     state.endReason = null;
     state.helpAutoPaused = false;
+    state.helpFromStart = false;
     state.settingsAutoPaused = false;
     state.settingsFromStart = false;
     state.hintCooldownUntil = 0;
@@ -2254,16 +2284,25 @@
     showStartScreen();
   }
 
-  function openHelp() {
-    state.helpAutoPaused = state.status === "playing";
+  function openHelp(options) {
+    const fromStart =
+      Boolean(options && options.fromStart) || !els.startOverlay.hidden;
+    state.helpFromStart = fromStart;
+    state.helpAutoPaused = !fromStart && state.status === "playing";
     if (state.helpAutoPaused) pauseGame({ silent: true });
     showOverlay(els.helpOverlay);
   }
 
   function closeHelp() {
     const wasAutoPaused = state.helpAutoPaused;
+    const fromStart = state.helpFromStart;
     hideOverlay(els.helpOverlay);
     state.helpAutoPaused = false;
+    state.helpFromStart = false;
+    if (fromStart) {
+      showOverlay(els.startOverlay);
+      return;
+    }
     if (wasAutoPaused && state.status === "paused") resumeGame();
   }
 
@@ -2413,6 +2452,9 @@
     });
     els.helpBtn.addEventListener("click", openHelp);
     els.settingsBtn.addEventListener("click", () => openSettings());
+    els.startHelpBtn.addEventListener("click", () =>
+      openHelp({ fromStart: true })
+    );
     els.resumeBtn.addEventListener("click", resumeGame);
     els.pauseRestartBtn.addEventListener("click", () =>
       startGame({ useCurrentLayout: true })
@@ -2430,9 +2472,9 @@
     els.settingsOverlay.addEventListener("click", (event) => {
       if (event.target === els.settingsOverlay) closeSettings();
     });
-    els.startSettingsBtn.addEventListener("click", () =>
-      openSettings({ fromStart: true })
-    );
+    els.startSettingsBtn.addEventListener("click", () => {
+      setAutoSkill(!state.autoSkill);
+    });
     els.autoSkillToggle.addEventListener("change", () => {
       setAutoSkill(els.autoSkillToggle.checked);
     });
@@ -2478,6 +2520,7 @@
     buildThemeCards();
     buildLayoutCards();
     buildCharacterCards();
+    buildCharacterEffects();
     buildAiCharacterCards();
     bindEvents();
     setDifficulty("normal");

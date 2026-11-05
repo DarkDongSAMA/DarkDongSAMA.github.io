@@ -1468,6 +1468,44 @@ kbd {
   gap: 5px;
 }
 
+.character-effects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.character-effects span {
+  min-width: 0;
+  padding-left: 5px;
+  overflow: hidden;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  color: #69768c;
+  font-size: 7px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-effects span[data-character="role1"] {
+  border-left-color: rgba(255, 138, 180, 0.34);
+}
+
+.character-effects span[data-character="role2"] {
+  border-left-color: rgba(255, 214, 10, 0.32);
+}
+
+.character-effects span[data-character="role3"] {
+  border-left-color: rgba(93, 130, 235, 0.5);
+}
+
+.start-help-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
 .character-card {
   position: relative;
   width: 100%;
@@ -3174,6 +3212,20 @@ kbd {
 
   .character-grid {
     gap: 4px;
+  }
+
+  .character-effects {
+    gap: 4px;
+    margin-top: 3px;
+  }
+
+  .character-effects span {
+    font-size: 6.6px;
+  }
+
+  .start-help-btn {
+    top: 14px;
+    right: 14px;
   }
 
   .character-card {
