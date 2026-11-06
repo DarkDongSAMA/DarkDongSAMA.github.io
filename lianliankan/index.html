@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-ui-theme="kirby">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070a12">
+  <title>卡比的美食比赛 · 对手对战</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="star-allies.css">
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="ambient ambient-c" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <span class="brand-copy">
+          <strong>卡比的美食比赛</strong>
+          <small>KIRBY FOOD MATCH</small>
+        </span>
+      </div>
+      <div class="top-actions">
+        <span class="mode-pill"><i></i>对手对战</span>
+        <button class="text-btn" id="helpBtn" type="button">玩法</button>
+        <button class="text-btn" id="settingsBtn" type="button">设置</button>
+        <button class="text-btn" id="pauseBtn" type="button" disabled>暂停</button>
+      </div>
+    </header>
+
+    <main class="game">
+      <section class="hud" aria-label="对战计分板">
+        <div class="fighter fighter--player" id="playerCard">
+          <div class="avatar avatar--player" id="playerAvatar" aria-hidden="true">1</div>
+          <div class="fighter-meta">
+            <span class="fighter-name" id="playerName">卡比</span>
+            <span class="score-line"><strong class="score" id="playerScore">0</strong><span class="unit">块</span></span>
+          </div>
+          <span class="skill-progress" aria-hidden="true"><i id="skillBar"></i></span>
+        </div>
+
+        <div class="clock" aria-label="剩余时间">
+          <div class="clock-main">
+            <span class="clock-time" id="timer">01:00</span>
+            <span class="clock-label" id="clockLabel">剩余时间</span>
+          </div>
+          <div class="clock-bottom">
+            <span>场上 <b id="remaining">120</b> 块</span>
+            <span class="clock-track" id="clockTrack" aria-hidden="true"><i id="timerBar"></i></span>
+          </div>
+          <div class="combo-meter" id="comboMeter" hidden>
+            <span>COMBO</span><strong id="comboCount">0</strong>
+          </div>
+        </div>
+
+        <div class="fighter fighter--ai" id="aiCard">
+          <div class="avatar avatar--ai" id="aiAvatar" aria-hidden="true">🍑</div>
+          <span class="ai-copy-badge" id="aiCopyBadge" hidden title="对手的复制能力">🔥</span>
+          <div class="fighter-meta">
+            <span class="fighter-name" id="aiName">对手 · 卡比</span>
+            <span class="score-line"><strong class="score" id="aiScore">0</strong><span class="unit">块</span></span>
+          </div>
+          <span class="ai-skill-progress" aria-hidden="true"><i id="aiSkillBar"></i></span>
+          <span class="ai-progress" aria-hidden="true"><i id="aiProgress"></i></span>
+        </div>
+      </section>
+
+      <section class="board-panel" aria-label="连连看棋盘">
+        <div class="board-topline">
+          <span id="layoutLabel">地图 · 满堂阵</span>
+          <span id="boardMeta">120 块 · 最多 2 弯</span>
+        </div>
+
+        <div class="board" id="board">
+          <div class="blackhole-layer" id="blackholeLayer" aria-hidden="true">
+            <div class="skill-blackhole" id="skillBlackhole" aria-hidden="true"><i></i><i></i><i></i><b></b><span class="blackhole-core"></span></div>
+          </div>
+          <div class="tile-layer" id="tileLayer"></div>
+          <svg class="path-layer" id="pathLayer" aria-hidden="true"></svg>
+          <div class="fire-layer" id="fireLayer" aria-hidden="true">
+            <div class="fire-cross" id="fireCross"><i></i><i></i><b></b></div>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        </div>
+
+        <div class="board-bottom">
+          <div class="board-status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText">点击两个同色色块，把它们连起来</span>
+          </div>
+          <div class="board-actions">
+            <div class="copy-ability-slot is-empty" id="copyAbilityBar" aria-live="polite">
+              <span class="copy-ability-icon" aria-hidden="true">🔥</span>
+              <span class="copy-ability-label">复制</span>
+              <strong id="copyAbilityName">暂无</strong>
+              <span class="copy-ability-time" id="copyAbilityTime"></span>
+              <span class="copy-ability-hint" id="copyAbilityHint" hidden></span>
+            </div>
+            <button class="skill-btn" id="skillBtn" type="button" disabled aria-label="特技充能中">
+              <span class="skill-icon" aria-hidden="true">✦</span>
+              <span class="skill-name" id="skillNameLabel">超级吸入</span>
+              <span class="skill-name-short">特技</span>
+              <span class="skill-state" id="skillState">5.0s</span>
+              <kbd>E</kbd>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footnote">
+        <span class="footnote-rule" aria-hidden="true"></span>
+        <span id="footerNote">60 秒限时 · 玩家特技 5 秒充能 · 对手特技 5–7 秒随机释放</span>
+      </footer>
+    </main>
+  </div>
+
+  <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+  <div class="skill-vortex" id="skillVortex" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="skill-impact" id="skillImpact" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+  <div class="skill-slash" id="skillSlash" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <!-- 开始 -->
+  <div class="overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="modal start-modal">
+      <button class="inline-settings start-help-btn" id="startHelpBtn" type="button" aria-label="查看玩法">玩法</button>
+      <button class="inline-settings start-options-btn" id="startOptionsBtn" type="button" aria-label="打开设置">设置</button>
+      <div class="eyebrow"><span></span>KIRBY FOOD MATCH · 1 VS 1</div>
+      <div class="logo-tiles" aria-hidden="true">
+        <i style="--c:#ff5a5f;--r:-8deg">🍎</i>
+        <i style="--c:#ffd60a;--r:6deg">🍋</i>
+        <i style="--c:#2ecc71;--r:-5deg">🥦</i>
+        <i style="--c:#4f7cff;--r:9deg">🍇</i>
+      </div>
+      <h1 id="startTitle">卡比的美食比赛</h1>
+
+      <div class="theme-block">
+        <span class="theme-label">主题</span>
+        <div class="theme-grid" id="themeGroup" role="group" aria-label="选择方块主题"></div>
+      </div>
+
+      <div class="mode-block">
+        <span class="mode-label">模式</span>
+        <div class="mode-segmented" id="modeGroup" role="group" aria-label="选择游戏模式">
+          <button type="button" data-mode="classic"><strong>经典</strong><span>60 秒</span></button>
+          <button type="button" data-mode="endless"><strong>无尽</strong><span>回合制</span></button>
+        </div>
+        <label class="round-count" id="roundCountWrap" hidden>
+          回合数
+          <input id="roundCount" type="number" min="1" max="20" value="3" inputmode="numeric" aria-label="无尽模式回合数">
+        </label>
+      </div>
+
+      <div class="layout-block">
+        <div class="setting-head">
+          <span>地图</span>
+          <small>点击更换地图</small>
+        </div>
+        <div class="current-map-display" id="currentMapDisplay"></div>
+      </div>
+
+      <div class="character-block">
+        <div class="setting-head">
+          <span>选择角色</span>
+          <button class="inline-settings" id="startSettingsBtn" type="button" aria-pressed="false" title="切换玩家特技自动释放">特技自动：关</button>
+        </div>
+        <div class="current-characters">
+          <div id="currentPlayerCharacter" class="current-character-slot"></div>
+          <div id="currentAiCharacter" class="current-character-slot"></div>
+        </div>
+      </div>
+
+      <div class="difficulty-block">
+        <div class="setting-head">
+          <span>难度</span>
+          <small>出手速度与特技发动概率</small>
+        </div>
+        <div class="segmented" id="difficultyGroup" role="group" aria-label="选择难度">
+          <button type="button" data-difficulty="easy">
+            <strong>春风</strong><span>4.4 秒/手 · 无特技</span>
+          </button>
+          <button type="button" data-difficulty="normal" class="is-active" aria-pressed="true">
+            <strong>标准</strong><span>3.0 秒/手 · 50% 特技</span>
+          </button>
+          <button type="button" data-difficulty="hard">
+            <strong>狂野</strong><span>1.9 秒/手 · 必放特技</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="primary-btn start-btn" id="startBtn" type="button">
+        <span>开始对战</span><span class="btn-arrow" aria-hidden="true">→</span>
+      </button>
+      <p class="start-note">点击色块操作 · 按 <kbd>E</kbd> 或手机双击棋盘释放特技</p>
+    </div>
+  </div>
+
+  <!-- 地图选择 -->
+  <div class="overlay" id="mapOverlay" role="dialog" aria-modal="true" aria-labelledby="mapPickerTitle" hidden>
+    <div class="modal map-modal">
+      <button class="close-btn" id="mapCloseBtn" type="button" aria-label="关闭地图选择">×</button>
+      <div class="eyebrow"><span></span>SELECT MAP</div>
+      <h2 id="mapPickerTitle">选择地图</h2>
+      <p class="map-modal-sub">点击地图即可切换，开始对战前可以随时更换。</p>
+      <div class="layout-grid map-picker-grid" id="mapPickerGroup" role="group" aria-label="选择地图"></div>
+    </div>
+  </div>
+
+  <!-- 角色选择 -->
+  <div class="overlay" id="characterOverlay" role="dialog" aria-modal="true" aria-labelledby="characterPickerTitle" hidden>
+    <div class="modal character-modal">
+      <button class="close-btn" id="characterCloseBtn" type="button" aria-label="关闭角色选择">×</button>
+      <div class="eyebrow"><span></span>SELECT CHARACTER</div>
+      <h2 id="characterPickerTitle">选择角色</h2>
+      <p class="character-modal-sub" id="characterPickerSub">点击角色查看详情并切换，确认后返回。</p>
+      <div class="character-preview" id="characterPreview">
+        <span class="character-preview-avatar" id="characterPreviewAvatar" aria-hidden="true">🍑</span>
+        <div class="character-preview-info">
+          <small id="characterPreviewSide">盟友</small>
+          <strong id="characterPreviewName">卡比</strong>
+          <b id="characterPreviewSkill">超级吸入</b>
+          <p id="characterPreviewDesc">自动消除最多 3 对同色食材</p>
+        </div>
+      </div>
+      <div class="character-picker-grid" id="characterPickerGroup" role="group" aria-label="选择角色"></div>
+      <button class="primary-btn character-confirm-btn" id="characterConfirmBtn" type="button">确定</button>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <div class="overlay" id="pauseOverlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+    <div class="modal pause-modal">
+      <div class="pause-mark" aria-hidden="true"><i></i><i></i></div>
+      <div class="eyebrow eyebrow--center"><span></span>PAUSED<span></span></div>
+      <h2 id="pauseTitle">对战暂停</h2>
+      <p>计时与对手都已暂停，准备好再继续。</p>
+      <button class="primary-btn" id="resumeBtn" type="button">继续游戏</button>
+      <button class="ghost-btn" id="pauseRestartBtn" type="button">重新开始本局</button>
+      <button class="ghost-btn" id="pauseMenuBtn" type="button">返回主菜单</button>
+    </div>
+  </div>
+
+  <!-- 玩法 -->
+  <div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="modal help-modal">
+      <button class="close-btn" id="helpCloseBtn" type="button" aria-label="关闭玩法说明">×</button>
+      <div class="eyebrow"><span></span>HOW TO PLAY</div>
+      <h2 id="helpTitle">怎么玩</h2>
+      <ol class="help-list">
+        <li><b>随机地图</b><span>每局都会随机出现不同形状、不同色块数量的棋盘，也可以在开局前自选地图。</span></li>
+        <li><b>选择同色</b><span>依次点击两个颜色相同的色块。</span></li>
+        <li><b>连起来</b><span>连接路线只能水平或垂直，最多转弯 2 次，也可以从棋盘边缘外绕行。</span></li>
+        <li><b>抢在对手前</b><span>你和对手同时消除。经典模式 60 秒后按消除方块数结算；无尽模式没有时间限制，按输入的回合数逐局进行，全部回合结束后累计方块数更多的一方获胜。</span></li>
+        <li><b>无解结算</b><span>当棋盘上没有可消除组合时，本局立即结束，直接按当前得分结算，不再自动重排。</span></li>
+        <li><b>复制能力</b><span>右下角带🔥的方块是复制能力方块。消除后获得「烈火」，复制能力方块一次只能存一个；3 秒倒计时结束前可以反复使用，点击任意方块会以它为中心，消除中心和上下左右共最多 5 块。对手也会获得并按难度概率反复使用。</span></li>
+      </ol>
+      <button class="primary-btn" id="helpOkBtn" type="button">明白了</button>
+    </div>
+  </div>
+
+  <!-- 设置 -->
+  <div class="overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
+    <div class="modal settings-modal">
+      <button class="close-btn" id="settingsCloseBtn" type="button" aria-label="关闭设置">×</button>
+      <div class="eyebrow"><span></span>SETTINGS</div>
+      <h2 id="settingsTitle">设置</h2>
+
+      <div class="setting-character">
+        <span class="character-avatar" id="settingCharacterAvatar" aria-hidden="true">🍑</span>
+        <div class="setting-character-info">
+          <strong id="settingCharacterTitle">卡比 · 超级吸入</strong>
+          <span id="settingCharacterDesc">5 秒充能 · 自动消除最多 3 对同色食材</span>
+        </div>
+      </div>
+
+      <label class="setting-switch-row" for="autoSkillToggle">
+        <span class="setting-switch-copy">
+          <b>玩家特技自动释放</b>
+          <small id="autoSkillDesc">你的特技条充满后自动触发，不需要按 E</small>
+        </span>
+        <span class="switch">
+          <input id="autoSkillToggle" type="checkbox" role="switch" aria-describedby="autoSkillDesc">
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+
+      <p class="setting-note">关闭时，特技条充满后点击「释放」或按 E 手动触发。对手角色的特技会每 5–7 秒随机自动释放。</p>
+
+      <label class="setting-switch-row" for="musicToggle">
+        <span class="setting-switch-copy">
+          <b>背景音乐</b>
+          <small id="musicDesc">游戏开始后循环播放；暂停时自动降低音量</small>
+        </span>
+        <span class="switch">
+          <input id="musicToggle" type="checkbox" role="switch" aria-describedby="musicDesc" checked>
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+
+      <label class="setting-switch-row" for="sfxToggle">
+        <span class="setting-switch-copy">
+          <b>音效</b>
+          <small id="sfxDesc">点击、暂停和角色特技音效</small>
+        </span>
+        <span class="switch">
+          <input id="sfxToggle" type="checkbox" role="switch" aria-describedby="sfxDesc" checked>
+          <span class="switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+
+      <div class="setting-theme-block">
+        <div class="setting-head">
+          <span>界面主题</span>
+          <small>按角色更换整体配色</small>
+        </div>
+        <div class="ui-theme-grid" id="uiThemeGroup" role="group" aria-label="界面主题"></div>
+      </div>
+
+      <button class="primary-btn" id="settingsDoneBtn" type="button">完成</button>
+    </div>
+  </div>
+
+  <!-- 结算 -->
+  <div class="overlay" id="endOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="modal end-modal" id="endModal">
+      <div class="result-badge" id="resultBadge" aria-hidden="true">胜</div>
+      <div class="eyebrow eyebrow--center"><span></span>ROUND OVER<span></span></div>
+      <h2 id="resultTitle">你赢了</h2>
+      <p class="result-sub" id="resultSub">抢在对手前面，清空了更多色块。</p>
+
+      <div class="result-scores" aria-label="本局比分">
+        <div class="result-side result-side--player">
+          <span>你</span>
+          <strong id="finalPlayerScore">0</strong>
+          <small>块</small>
+        </div>
+        <div class="result-vs">VS</div>
+        <div class="result-side result-side--ai">
+          <span>对手</span>
+          <strong id="finalAiScore">0</strong>
+          <small>块</small>
+        </div>
+      </div>
+
+      <div class="result-stats">
+        <div><span>地图</span><b id="finalLayout">满堂阵</b></div>
+        <div><span id="finalTimeLabel">本局用时</span><b id="finalTime">01:00</b></div>
+        <div><span>难度</span><b id="finalDifficulty">标准</b></div>
+        <div><span>对手节奏</span><b id="finalAiRate">3.0 秒/手</b></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="primary-btn" id="againBtn" type="button">再来一局</button>
+        <button class="ghost-btn" id="changeDifficultyBtn" type="button">调整设置</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="clickSound" src="audio/00be - SE_KETTEI.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="selectSound" src="audio/00bb - SE_SELECT.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="cursorSound" src="audio/00bc - SE_CURSOR.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="cancelSound" src="audio/00bf - SE_CANCEL.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="powerSound" src="audio/00f3 - SE_PWUP.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="pauseSound" src="audio/00ba - SE_PAUSE.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="suikomiSound" src="audio/00f5 - SE_SUIKOMI.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="markholeSound" src="audio/01ab - SE_MARKHOLE1.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="markwrSound" src="audio/01b1 - SE_MARK_WR2.wav" preload="auto" aria-hidden="true"></audio>
+  <audio id="bgMusic" src="audio/12. Crash! Gourmet Race.mp3" preload="auto" loop aria-hidden="true"></audio>
+
+  <script src="layouts.js"></script>
+  <script src="logic.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
