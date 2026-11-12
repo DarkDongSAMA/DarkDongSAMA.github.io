@@ -17,6 +17,10 @@
   const MAX_HISTORY = 2000;
   const REELS = 5;
   const ROWS = 3;
+  const PITY_START = 10;
+  const PITY_GUARANTEE = 20;
+  const PITY_STEP = 0.05;
+  const PITY_MAX_CHANCE = 0.65;
 
   // Weights sum to 100. Payouts are multiples of the TOTAL bet, per winning line.
   const SYMBOLS = [
@@ -164,6 +168,43 @@
     return 1;
   }
 
+  function getPityInfo(lossStreak) {
+    const streak = Math.max(0, Math.floor(Number(lossStreak) || 0));
+    const eligible = streak >= PITY_START;
+    const guaranteed = streak >= PITY_GUARANTEE;
+    const chance = guaranteed
+      ? 1
+      : eligible
+        ? Math.min(PITY_MAX_CHANCE, (streak - PITY_START + 1) * PITY_STEP)
+        : 0;
+
+    return {
+      streak,
+      eligible,
+      guaranteed,
+      chance,
+      boostPercent: Math.round(chance * 100),
+      toBoost: Math.max(0, PITY_START - streak),
+      toGuarantee: Math.max(0, PITY_GUARANTEE - streak),
+      progress: Math.min(1, streak / PITY_GUARANTEE)
+    };
+  }
+
+  function makePityGrid(rng) {
+    const grid = generateGrid(rng);
+    const line = LINES[Math.min(LINES.length - 1, Math.floor(rng() * LINES.length))];
+    const roll = rng();
+    const symbolId = roll < 0.5 ? 'cherry' : roll < 0.85 ? 'lemon' : 'bell';
+    const symbol = SYMBOL_BY_ID[symbolId];
+
+    for (let reel = 0; reel < 3; reel += 1) {
+      grid[reel][line.rows[reel]] = symbol.id;
+    }
+    grid[3][line.rows[3]] = randomSymbolExcept(rng, symbol.id).id;
+
+    return { grid, line, symbol };
+  }
+
   function evaluate(grid, bet) {
     const wins = [];
     const betMultiplier = getBetMultiplier(bet);
@@ -257,9 +298,35 @@
   function spin(options = {}) {
     const rng = typeof options.rng === 'function' ? options.rng : Math.random;
     const bet = Math.max(MIN_BET, Math.floor(Number(options.bet) || MIN_BET));
-    const grid = forceGrid(rng, options.forced) || generateGrid(rng);
-    const result = evaluate(grid, bet);
-    return { ...result, grid, bet, forced: options.forced || null };
+    const forced = options.forced || null;
+    let grid = forceGrid(rng, forced) || generateGrid(rng);
+    let result = evaluate(grid, bet);
+    let pityTriggered = false;
+    let pityHard = false;
+    let pityChance = 0;
+
+    if (!forced && result.total === 0) {
+      const pity = getPityInfo(options.pityLossStreak);
+      pityChance = pity.chance;
+
+      if (pity.eligible && (pity.guaranteed || rng() < pity.chance)) {
+        const assisted = makePityGrid(rng);
+        grid = assisted.grid;
+        result = evaluate(grid, bet);
+        pityTriggered = true;
+        pityHard = pity.guaranteed;
+      }
+    }
+
+    return {
+      ...result,
+      grid,
+      bet,
+      forced,
+      pityTriggered,
+      pityHard,
+      pityChance
+    };
   }
 
   // Theoretical return before rounding, assuming a fair RNG. Useful for the debug panel.
@@ -280,6 +347,8 @@
     MAX_HISTORY,
     REELS,
     ROWS,
+    PITY_START,
+    PITY_GUARANTEE,
     SYMBOLS,
     SYMBOL_BY_ID,
     LINES,
@@ -287,6 +356,7 @@
     THEORETICAL_RTP,
     BASE_RTP: THEORETICAL_RTP,
     getBetMultiplier,
+    getPityInfo,
     generateGrid,
     evaluate,
     spin

@@ -35,6 +35,9 @@
     historyBtnSide: $('#historyBtnSide'),
     reelGrid: $('#reelGrid'),
     lineOverlay: $('#lineOverlay'),
+    pityMeter: $('#pityMeter'),
+    pityFill: $('#pityFill'),
+    pityText: $('#pityText'),
     bigWin: $('#bigWin'),
     bigWinKicker: $('#bigWinKicker'),
     bigWinTitle: $('#bigWinTitle'),
@@ -138,6 +141,10 @@
         lastClaimAt: 0,
         totalClaimed: 0
       },
+      pity: {
+        lossStreak: 0,
+        totalTriggers: 0
+      },
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -159,6 +166,7 @@
         ...parsed,
         stats: { ...fallback.stats, ...(parsed.stats || {}) },
         hourly: { ...fallback.hourly, ...(parsed.hourly || {}) },
+        pity: { ...fallback.pity, ...(parsed.pity || {}) },
         history: Array.isArray(parsed.history) ? parsed.history.slice(-Engine.MAX_HISTORY) : []
       };
 
@@ -173,6 +181,8 @@
       merged.stats.bestMultiplier = Number(merged.stats.bestMultiplier) || 0;
       merged.hourly.lastClaimAt = clampInteger(merged.hourly.lastClaimAt, 0, Date.now(), 0);
       merged.hourly.totalClaimed = clampInteger(merged.hourly.totalClaimed, 0, 1e15, 0);
+      merged.pity.lossStreak = clampInteger(merged.pity.lossStreak, 0, Engine.PITY_GUARANTEE, 0);
+      merged.pity.totalTriggers = clampInteger(merged.pity.totalTriggers, 0, 1e12, 0);
 
       if (merged.bet > merged.coins && merged.coins >= Engine.MIN_BET) {
         merged.bet = Math.max(Engine.MIN_BET, Math.min(merged.bet, Math.floor(merged.coins / 100) * 100 || Engine.MIN_BET));
@@ -796,12 +806,14 @@
     el.resultBar.classList.add('is-win');
     el.resultIcon.className = `fa-solid ${result.best ? result.best.symbolIcon : 'fa-star'}`;
     const boost = result.betMultiplier > 1 ? ` · BET ×${multiplierFormatter.format(result.betMultiplier)}` : '';
-    el.resultKicker.textContent = `LINE HIT · ${wins.length} LINE${wins.length > 1 ? 'S' : ''}${boost}`;
+    const pityKicker = result.pityTriggered ? 'PITY · ' : '';
+    el.resultKicker.textContent = `${pityKicker}LINE HIT · ${wins.length} LINE${wins.length > 1 ? 'S' : ''}${boost}`;
 
+    const pityTitle = result.pityTriggered ? '保底命中 · ' : '';
     if (wins.length === 1) {
-      el.resultTitle.textContent = `${wins[0].lineName} · ${wins[0].symbolName} ${wins[0].count} 连`;
+      el.resultTitle.textContent = `${pityTitle}${wins[0].lineName} · ${wins[0].symbolName} ${wins[0].count} 连`;
     } else {
-      el.resultTitle.textContent = `${wins.length} 条中奖线 · 最高 ${result.maxCount} 连`;
+      el.resultTitle.textContent = `${pityTitle}${wins.length} 条中奖线 · 最高 ${result.maxCount} 连`;
     }
 
     el.resultDetail.textContent = wins
@@ -877,7 +889,7 @@
 
     let result;
     try {
-      result = Engine.spin({ bet, forced });
+      result = Engine.spin({ bet, forced, pityLossStreak: state.pity.lossStreak });
       await animateReels(result.grid, version);
     } catch (error) {
       state.coins += bet;
@@ -916,7 +928,9 @@
         amount: win.amount,
         cells: win.cells.map((cell) => ({ ...cell }))
       })),
-      maxCount: result.maxCount
+      maxCount: result.maxCount,
+      pity: Boolean(result.pityTriggered),
+      pityHard: Boolean(result.pityHard)
     };
 
     state.history.push(record);
@@ -931,6 +945,13 @@
     state.stats.biggestWin = Math.max(state.stats.biggestWin, result.total);
     state.stats.bestMultiplier = Math.max(state.stats.bestMultiplier, result.total / bet);
 
+    if (result.total > 0) {
+      state.pity.lossStreak = 0;
+    } else {
+      state.pity.lossStreak = Math.min(Engine.PITY_GUARANTEE, state.pity.lossStreak + 1);
+    }
+    if (result.pityTriggered) state.pity.totalTriggers += 1;
+
     if (state.bet > state.coins && state.coins >= Engine.MIN_BET) {
       state.bet = Math.max(
         Engine.MIN_BET,
@@ -941,6 +962,7 @@
     persist();
     updateBalance(result.total > 0);
     renderStats();
+    renderPity();
     renderHistory();
     if (el.historyDialog.open) renderFullHistory();
     setSpinningUI(false);
@@ -950,6 +972,13 @@
       showWinResult(result, bet, version);
     } else {
       showLossResult(bet);
+    }
+
+    if (result.pityTriggered) {
+      toast(result.pityHard ? '20 局硬保底触发：本局至少中一条线。' : '幸运保底触发：中奖率加成命中。', {
+        type: 'success',
+        duration: 2800
+      });
     }
 
     if (forced) {
@@ -985,6 +1014,24 @@
     el.statHitRate.textContent = stats.spins > 0 ? formatPercent(stats.winningSpins / stats.spins) : '0%';
     el.statBiggest.textContent = formatNumber(stats.biggestWin);
     el.statWagered.textContent = formatNumber(stats.wagered);
+  }
+
+  function renderPity() {
+    const info = Engine.getPityInfo(state.pity.lossStreak);
+    el.pityFill.style.width = `${Math.round(info.progress * 100)}%`;
+    el.pityMeter.classList.toggle('is-boosted', info.eligible && !info.guaranteed);
+    el.pityMeter.classList.toggle('is-ready', info.guaranteed);
+
+    if (info.guaranteed) {
+      el.pityText.textContent = '保底就绪 · 下局必中';
+      el.pityMeter.title = '连续 20 局未中，下一局至少中一条线。';
+    } else if (info.eligible) {
+      el.pityText.textContent = `加成 +${info.boostPercent}% · 再 ${info.toGuarantee} 局保底`;
+      el.pityMeter.title = `已连续未中 ${info.streak} 局，中奖率获得额外提升；再 ${info.toGuarantee} 局触发硬保底。`;
+    } else {
+      el.pityText.textContent = `未中 ${info.streak} 局 · 再 ${info.toBoost} 局加成`;
+      el.pityMeter.title = `再连续未中 ${info.toBoost} 局，将开始获得额外中奖概率；20 局触发硬保底。`;
+    }
   }
 
   function createHistoryEmpty(full = false) {
@@ -1064,8 +1111,8 @@
     if (entry.wins && entry.wins.length) {
       const maxCount = entry.wins.reduce((max, win) => Math.max(max, win.count), 0);
       sub.textContent = `${entry.wins.length} 条线命中 · 最高 ${maxCount} 连${
-        full ? ` · 余额 ${formatNumber(entry.balanceAfter)}` : ''
-      }`;
+        entry.pity ? ' · 保底' : ''
+      }${full ? ` · 余额 ${formatNumber(entry.balanceAfter)}` : ''}`;
     } else {
       sub.textContent = full ? `未中奖 · 余额 ${formatNumber(entry.balanceAfter)}` : '未中奖';
     }
@@ -1075,6 +1122,12 @@
 
     const winsRow = document.createElement('div');
     winsRow.className = 'history-item__wins';
+    if (entry.pity) {
+      const pityTag = document.createElement('span');
+      pityTag.className = 'history-win-tag is-pity';
+      pityTag.textContent = '幸运保底';
+      winsRow.append(pityTag);
+    }
     if (entry.wins && entry.wins.length) {
       entry.wins.forEach((win) => {
         const tag = document.createElement('span');
@@ -1189,6 +1242,7 @@
     updateSoundUI();
     refreshBetUI();
     renderStats();
+    renderPity();
     renderHistory();
     renderHourly();
     updateDevMeta();
@@ -1463,6 +1517,7 @@
       bet: state.bet,
       stats: state.stats,
       hourly: state.hourly,
+      pity: state.pity,
       history: state.history
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });

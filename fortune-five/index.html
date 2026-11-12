@@ -106,6 +106,15 @@
                 <span><i style="--line-color:#7dd3fc"></i>V 线</span>
                 <span><i style="--line-color:#c4b5fd"></i>Λ 线</span>
               </div>
+
+              <div class="pity-meter" id="pityMeter" title="连续 10 局未中后开始提升中奖率，连续 20 局未中则下一局至少中一条线">
+                <span class="pity-meter__icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+                <span class="pity-meter__label">幸运保底</span>
+                <div class="pity-meter__track" aria-hidden="true">
+                  <span class="pity-meter__fill" id="pityFill"></span>
+                </div>
+                <span class="pity-meter__text" id="pityText" aria-live="polite">未中 0 局 · 再 10 局加成</span>
+              </div>
             </div>
 
             <aside class="spin-rail" aria-label="下注与旋转控制">
@@ -306,6 +315,13 @@
         <div>
           <h3>整点补给</h3>
           <p>每个整点刷新一次领取资格，点击“整点补给”可领 1,000 金币；同一小时只能领一次，倒计时结束后自动刷新。</p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="rule__num">06</span>
+        <div>
+          <h3>幸运保底</h3>
+          <p>连续 10 局未中后，从下一局开始获得额外中奖概率；之后每多输 1 局再增加 5%。连续 20 局未中，下一局至少中一条线。保底进度会保存。</p>
         </div>
       </div>
     </div>
