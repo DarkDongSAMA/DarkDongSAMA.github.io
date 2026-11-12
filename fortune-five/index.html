@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b0f">
+  <meta name="description" content="DarkHell — 五轴老虎机，本地存档，纯娱乐。">
+  <title>DarkHell · 五轴老虎机</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0f14'/%3E%3Cpath d='M12 43 18 22l10 9 4-15 4 15 10-9 6 21H12Z' fill='%23ffc857'/%3E%3Cpath d='M15 47h34' stroke='%23ffc857' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <!-- Font Awesome 6.7.2 Free, bundled locally under vendor/fontawesome (see LICENSE.txt). -->
+  <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="ambient__orb ambient__orb--gold"></div>
+    <div class="ambient__orb ambient__orb--green"></div>
+    <div class="ambient__orb ambient__orb--red"></div>
+    <div class="ambient__grid"></div>
+    <div class="ambient__vignette"></div>
+  </div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" id="brand">
+        <div class="brand__mark" id="brandMark" aria-hidden="true">
+          <span class="brand__halo"></span>
+          <i class="fa-solid fa-crown"></i>
+          <span class="brand__five">5</span>
+        </div>
+        <div class="brand__copy">
+          <span class="brand__eyebrow">DARKHELL · 5 REELS</span>
+          <h1>DarkHell</h1>
+        </div>
+      </div>
+
+      <div class="topbar__actions">
+        <div class="balance" aria-label="我的金币">
+          <span class="balance__icon"><i class="fa-solid fa-coins" aria-hidden="true"></i></span>
+          <span class="balance__copy">
+            <span>我的金币</span>
+            <strong id="coinBalance">10,000</strong>
+          </span>
+          <span class="balance__pulse" aria-hidden="true"></span>
+        </div>
+        <button class="icon-btn" id="soundToggle" type="button" aria-label="关闭音效" title="音效">
+          <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+        </button>
+        <button class="ghost-btn" id="helpBtn" type="button">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          <span>玩法</span>
+        </button>
+        <button class="ghost-btn" id="historyBtn" type="button">
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          <span>记录</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <div class="primary">
+        <section class="machine" aria-labelledby="machineTitle">
+          <div class="machine__marquee">
+            <div class="marquee__side">
+              <span>5 REELS</span>
+              <b>五轴</b>
+            </div>
+            <div class="marquee__center">
+              <span class="marquee__eyebrow">DARKHELL</span>
+              <h2 id="machineTitle">DarkHell</h2>
+              <span class="marquee__sub">THREE IN A ROW WINS</span>
+            </div>
+            <div class="marquee__side marquee__side--right">
+              <span>MAX LINE</span>
+              <b>216×</b>
+            </div>
+            <div class="marquee__bulbs" aria-hidden="true"></div>
+          </div>
+
+          <div class="machine__body">
+            <div class="reel-frame">
+              <div class="reel-frame__top">
+                <span><i class="fa-solid fa-circle-nodes" aria-hidden="true"></i> 5 PAYLINES</span>
+                <span class="reel-frame__hint">左起连续 3 / 4 / 5 个相同图案即可中奖</span>
+                <span>下注倍率 ×1–3</span>
+              </div>
+
+              <div class="reel-window">
+                <div class="reel-grid" id="reelGrid" aria-label="老虎机卷轴"></div>
+                <svg class="line-overlay" id="lineOverlay" aria-hidden="true"></svg>
+                <div class="reel-glass" aria-hidden="true"></div>
+                <div class="big-win" id="bigWin" hidden>
+                  <div class="big-win__flare" aria-hidden="true"></div>
+                  <span class="big-win__kicker" id="bigWinKicker">FIVE OF A KIND</span>
+                  <strong class="big-win__title" id="bigWinTitle">BIG WIN</strong>
+                  <span class="big-win__amount" id="bigWinAmount">0</span>
+                  <span class="big-win__sub">金币已到账</span>
+                </div>
+                <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+              </div>
+
+              <div class="line-legend" aria-label="中奖线图例">
+                <span><i style="--line-color:#ffd166"></i>中线</span>
+                <span><i style="--line-color:#5eead4"></i>上线</span>
+                <span><i style="--line-color:#f9a8d4"></i>下线</span>
+                <span><i style="--line-color:#7dd3fc"></i>V 线</span>
+                <span><i style="--line-color:#c4b5fd"></i>Λ 线</span>
+              </div>
+            </div>
+
+            <aside class="spin-rail" aria-label="下注与旋转控制">
+              <span class="spin-rail__eyebrow">BET &amp; SPIN</span>
+
+              <div class="bet-panel">
+                <div class="bet-panel__head">
+                  <span>本局下注</span>
+                  <span class="bet-mult-badge" id="betMultiplierLabel" title="下注 500 起 ×1.5，1,000 起 ×2，5,000 起 ×3">×1</span>
+                </div>
+                <div class="bet-presets" id="betPresets" role="group" aria-label="下注金额预设">
+                  <button class="bet-chip" type="button" data-bet="100" title="下注倍率 ×1">100</button>
+                  <button class="bet-chip" type="button" data-bet="500" title="下注倍率 ×1.5">500</button>
+                  <button class="bet-chip" type="button" data-bet="1000" title="下注倍率 ×2">1,000</button>
+                  <button class="bet-chip" type="button" data-bet="5000" title="下注倍率 ×3">5,000</button>
+                </div>
+                <span class="bet-custom__caption">自定义下注 <b>最低 100</b></span>
+                <label class="bet-custom" for="customBet">
+                  <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                  <input id="customBet" type="number" min="100" step="100" value="100" inputmode="numeric" autocomplete="off" aria-label="自定义下注金额" placeholder="输入金额">
+                  <button class="bet-max" id="maxBet" type="button">MAX</button>
+                </label>
+              </div>
+
+              <button class="spin" id="spinBtn" type="button" aria-label="旋转老虎机">
+                <span class="spin__glow" aria-hidden="true"></span>
+                <span class="spin__icon"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></span>
+                <span class="spin__text">
+                  <strong>旋转</strong>
+                  <small>SPIN</small>
+                </span>
+              </button>
+              <span class="spin-rail__foot"><i class="fa-regular fa-keyboard" aria-hidden="true"></i> 空格键也可旋转</span>
+            </aside>
+
+            <div class="result-bar" id="resultBar" aria-live="polite">
+              <div class="result-bar__icon" id="resultIconWrap">
+                <i class="fa-solid fa-clover" id="resultIcon" aria-hidden="true"></i>
+              </div>
+              <div class="result-bar__copy">
+                <span class="result-bar__kicker" id="resultKicker">READY TO SPIN</span>
+                <strong id="resultTitle">好运，从第一转开始</strong>
+                <span class="result-bar__detail" id="resultDetail">选择下注金额，点击旋转</span>
+              </div>
+              <div class="result-bar__amount" id="resultAmount">—</div>
+            </div>
+
+            <div class="bailout" id="bailout" hidden>
+              <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+              <span>金币不足 100，牌桌给你一份补给。</span>
+              <button type="button" id="bailoutBtn">领取 1,000 金币</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="paytable-card" aria-labelledby="paytableTitle">
+          <div class="section-heading">
+            <div>
+              <span class="section-heading__eyebrow">PAYTABLE</span>
+              <h2 id="paytableTitle">图案赔率</h2>
+            </div>
+            <span class="section-heading__note">赔付倍数 × 总下注 × 下注倍率 · 多条中奖线可叠加</span>
+          </div>
+          <div class="paytable-grid" id="paytableGrid"></div>
+          <p class="paytable-footnote">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            同一局可同时命中多条线。4 连、5 连会替换 3 连赔付，不重复计算。下注达到 500 / 1,000 / 5,000 时，中奖金额额外 ×1.5 / ×2 / ×3。
+          </p>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <section class="panel hourly-panel" aria-labelledby="hourlyTitle">
+          <div class="panel__head">
+            <div>
+              <span class="panel__eyebrow">HOURLY DROP</span>
+              <h2 id="hourlyTitle">整点补给</h2>
+            </div>
+            <span class="hourly-badge"><i class="fa-regular fa-clock" aria-hidden="true"></i> 每小时</span>
+          </div>
+          <div class="hourly-body">
+            <div class="hourly-amount">
+              <span class="hourly-amount__icon"><i class="fa-solid fa-coins" aria-hidden="true"></i></span>
+              <strong>1,000</strong>
+              <span>金币</span>
+            </div>
+            <div class="hourly-status">
+              <span id="hourlyStatus">本小时可领取</span>
+              <small id="hourlyCountdown">距离下次整点 —</small>
+            </div>
+            <button class="hourly-btn" id="hourlyClaim" type="button">
+              <i class="fa-solid fa-gift" aria-hidden="true"></i>
+              <span>领取 1,000</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel stats-panel" aria-labelledby="statsTitle">
+          <div class="panel__head">
+            <div>
+              <span class="panel__eyebrow">YOUR TABLE</span>
+              <h2 id="statsTitle">牌桌概况</h2>
+            </div>
+            <span class="local-badge"><i class="fa-solid fa-hard-drive" aria-hidden="true"></i> 本地</span>
+          </div>
+
+          <div class="stat-hero" id="statHero">
+            <span>累计盈亏</span>
+            <strong id="totalNet">0</strong>
+            <small id="netCaption">还没有开过局</small>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-cell">
+              <span>总局数</span>
+              <strong id="statSpins">0</strong>
+            </div>
+            <div class="stat-cell">
+              <span>中奖率</span>
+              <strong id="statHitRate">0%</strong>
+            </div>
+            <div class="stat-cell">
+              <span>最大单局</span>
+              <strong id="statBiggest">0</strong>
+            </div>
+            <div class="stat-cell">
+              <span>累计流水</span>
+              <strong id="statWagered">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel history-panel" aria-labelledby="historyTitle">
+          <div class="panel__head">
+            <div>
+              <span class="panel__eyebrow">RECENT SPINS</span>
+              <h2 id="historyTitle">最近战绩</h2>
+            </div>
+            <button class="text-btn" id="historyBtnSide" type="button">全部 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </section>
+
+        <p class="sidebar-note">
+          <i class="fa-solid fa-lock" aria-hidden="true"></i>
+          金币与最近 2,000 局记录保存在此浏览器，不会上传。
+        </p>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <span>DARKHELL</span>
+      <span>仅供娱乐 · 不涉及真实货币</span>
+    </footer>
+  </div>
+
+  <dialog class="modal" id="helpDialog">
+    <div class="modal__glow" aria-hidden="true"></div>
+    <button class="modal__close" type="button" data-close-dialog aria-label="关闭">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+    <div class="modal__head">
+      <span class="modal__eyebrow">HOW TO PLAY</span>
+      <h2>怎么玩</h2>
+      <p>五轴三行，五条固定中奖线。好运藏在连续里。</p>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <span class="rule__num">01</span>
+        <div>
+          <h3>左起连线</h3>
+          <p>每条线从最左列开始，连续出现 3 个、4 个或 5 个相同图案即中奖。第 4 个不同，就只按 3 连结算。</p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="rule__num">02</span>
+        <div>
+          <h3>五条线同时结算</h3>
+          <p>中线、上线、下线、V 线、Λ 线同时开奖。同一局可以命中多条线，奖金叠加。</p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="rule__num">03</span>
+        <div>
+          <h3>越稀有，倍数越高</h3>
+          <p>苹果和柠檬最常见；命运骰最稀有，5 连单线可拿到 216 倍总下注。4 连和 5 连的倍率相近，5 连只略高一点。</p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="rule__num">04</span>
+        <div>
+          <h3>自由下注 + 倍率</h3>
+          <p>最低下注 100 金币，可直接选 100 / 500 / 1,000 / 5,000，也可输入任意不少于 100 的整数。下注达到 500 / 1,000 / 5,000 时，中奖金额额外 ×1.5 / ×2 / ×3；下注越高，倍率越高。</p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="rule__num">05</span>
+        <div>
+          <h3>整点补给</h3>
+          <p>每个整点刷新一次领取资格，点击“整点补给”可领 1,000 金币；同一小时只能领一次，倒计时结束后自动刷新。</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal__tip">
+      <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+      每一局都独立随机，没有“快出奖了”这种说法。玩得开心，适可而止。
+    </div>
+    <div class="modal__actions">
+      <button class="primary-btn" type="button" data-close-dialog>开始游戏</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal modal--wide" id="historyDialog">
+    <div class="modal__glow" aria-hidden="true"></div>
+    <button class="modal__close" type="button" data-close-dialog aria-label="关闭">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+    <div class="modal__head modal__head--row">
+      <div>
+        <span class="modal__eyebrow">SPIN HISTORY</span>
+        <h2>历史记录</h2>
+        <p id="historyDialogSummary">所有结果都记录在本机。</p>
+      </div>
+      <div class="modal__head-actions">
+        <button class="outline-btn" id="exportHistory" type="button">
+          <i class="fa-solid fa-download" aria-hidden="true"></i> 导出
+        </button>
+        <button class="outline-btn outline-btn--danger" id="clearHistory" type="button">
+          <i class="fa-solid fa-trash-can" aria-hidden="true"></i> 清空
+        </button>
+      </div>
+    </div>
+    <div class="history-list history-list--full" id="historyFullList"></div>
+    <div class="modal__actions modal__actions--between">
+      <span class="history-limit-note" id="historyLimitNote"></span>
+      <button class="outline-btn" id="loadMoreHistory" type="button">显示更多</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal modal--confirm" id="confirmDialog">
+    <div class="confirm__icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
+    <h2 id="confirmTitle">确认操作</h2>
+    <p id="confirmText"></p>
+    <div class="modal__actions">
+      <button class="outline-btn" id="confirmCancel" type="button">取消</button>
+      <button class="danger-btn" id="confirmOk" type="button">确定</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal modal--auth" id="devAuth">
+    <button class="modal__close" type="button" id="devAuthClose" aria-label="关闭">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+    <div class="auth__mark" aria-hidden="true"><i class="fa-solid fa-fingerprint"></i></div>
+    <span class="modal__eyebrow">RESTRICTED ACCESS</span>
+    <h2>维护通道</h2>
+    <p class="auth__intro">此区域仅限授权维护。请输入维护口令。</p>
+    <form id="devAuthForm" autocomplete="off">
+      <label class="auth__field">
+        <span>维护口令</span>
+        <input id="devPassword" type="password" autocomplete="off" spellcheck="false" placeholder="输入维护口令">
+        <i class="fa-solid fa-key" aria-hidden="true"></i>
+      </label>
+      <p class="auth__error" id="devAuthError"></p>
+      <button class="primary-btn primary-btn--full" type="submit">
+        <i class="fa-solid fa-unlock-keyhole" aria-hidden="true"></i> 验证并进入
+      </button>
+    </form>
+  </dialog>
+
+  <aside class="dev-panel" id="devPanel" hidden aria-label="调试面板">
+    <div class="dev-panel__head">
+      <div>
+        <span><i class="fa-solid fa-terminal" aria-hidden="true"></i> DEV CONSOLE</span>
+        <strong>维护模式</strong>
+      </div>
+      <button class="dev-close" id="devClose" type="button" aria-label="关闭调试面板">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="dev-panel__body">
+      <div class="dev-balance">
+        <span>当前金币</span>
+        <strong id="devCoinValue">0</strong>
+        <small>本机存档</small>
+      </div>
+
+      <div class="dev-label">快速补给</div>
+      <div class="dev-quick">
+        <button type="button" data-add-coins="10000">+ 1 万</button>
+        <button type="button" data-add-coins="100000">+ 10 万</button>
+        <button type="button" data-add-coins="1000000">+ 100 万</button>
+      </div>
+
+      <label class="dev-field">
+        <span>设置金币</span>
+        <div>
+          <input id="devSetCoins" type="number" min="0" step="100" placeholder="输入金币">
+          <button id="devApplyCoins" type="button">应用</button>
+        </div>
+      </label>
+
+      <label class="dev-field">
+        <span>下一局指定结果</span>
+        <select id="devForce">
+          <option value="">随机（正常开奖）</option>
+          <option value="loss">必输</option>
+          <option value="triple">三连 · 皇冠</option>
+          <option value="quad">四连 · 皇冠</option>
+          <option value="five">五连 · 命运骰</option>
+          <option value="mega">超级大奖 · 双线五连</option>
+        </select>
+      </label>
+      <p class="dev-hint">指定结果仅对下一局生效，开奖后自动恢复随机。</p>
+
+      <button class="dev-jackpot" id="devMega" type="button">
+        <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+        立即装填 432× 双线大奖
+      </button>
+
+      <div class="dev-label">危险操作</div>
+      <div class="dev-danger">
+        <button type="button" id="devClearHistory">清空历史</button>
+        <button type="button" id="devResetAll">重置全部存档</button>
+      </div>
+      <p class="dev-meta" id="devMeta">—</p>
+    </div>
+  </aside>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <noscript>
+    <div class="noscript">需要启用 JavaScript 才能旋转卷轴。</div>
+  </noscript>
+
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
