@@ -57,7 +57,19 @@
       </div>
     </header>
 
-    <main class="layout">
+    <nav class="mode-switch" aria-label="游戏模式">
+      <button class="mode-tab is-active" type="button" data-mode="slots" aria-pressed="true">
+        <i class="fa-solid fa-dice" aria-hidden="true"></i>
+        <span>老虎机</span>
+      </button>
+      <button class="mode-tab" type="button" data-mode="scratch" aria-pressed="false">
+        <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+        <span>刮刮乐</span>
+        <small id="scratchTabBadge">NEW</small>
+      </button>
+    </nav>
+
+    <main class="layout" id="slotsView">
       <div class="primary">
         <section class="machine" aria-labelledby="machineTitle">
           <div class="machine__marquee">
@@ -265,6 +277,57 @@
       </aside>
     </main>
 
+    <main class="scratch-layout" id="scratchView" hidden>
+      <div class="scratch-left">
+        <section class="scratch-cabinet" aria-labelledby="scratchTitle">
+          <div class="scratch-cabinet__head">
+            <div>
+              <span class="section-heading__eyebrow">SCRATCH &amp; WIN</span>
+              <h1 id="scratchTitle">刮刮乐</h1>
+              <p>选一张票，刮开涂层。刮开 80% 自动开票，也可以一键刮开。</p>
+            </div>
+            <span class="scratch-cabinet__hint"><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> 按住拖动刮开</span>
+          </div>
+
+          <div class="ticket-grid" id="ticketGrid"></div>
+
+          <div class="scratch-stage" id="scratchStage"></div>
+
+          <div class="scratch-controls">
+            <button class="primary-btn scratch-reveal" id="scratchRevealAll" type="button" disabled>
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+              一键刮开
+            </button>
+            <span class="scratch-progress" id="scratchProgressText">选择一张刮票开始</span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="scratch-side">
+        <section class="panel scratch-rules-panel" aria-labelledby="scratchRulesTitle">
+          <div class="panel__head">
+            <div>
+              <span class="panel__eyebrow">TICKET RULES</span>
+              <h2 id="scratchRulesTitle">三种刮票</h2>
+            </div>
+            <span class="hourly-badge"><i class="fa-solid fa-ticket" aria-hidden="true"></i> 3 款</span>
+          </div>
+          <div class="scratch-rules" id="scratchRules"></div>
+        </section>
+
+        <section class="panel scratch-history-panel" aria-labelledby="scratchHistoryTitle">
+          <div class="panel__head">
+            <div>
+              <span class="panel__eyebrow">SCRATCH HISTORY</span>
+              <h2 id="scratchHistoryTitle">刮票记录</h2>
+            </div>
+            <span class="scratch-net" id="scratchNet">盈亏 0</span>
+          </div>
+          <div class="scratch-history" id="scratchHistory"></div>
+        </section>
+      </aside>
+    </main>
+
     <footer class="footer">
       <span>DARKHELL</span>
       <span>仅供娱乐 · 不涉及真实货币</span>
@@ -458,6 +521,7 @@
   </noscript>
 
   <script src="engine.js"></script>
+  <script src="scratch.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

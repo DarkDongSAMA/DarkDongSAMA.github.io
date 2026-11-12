@@ -415,6 +415,86 @@ button:disabled {
 }
 
 /* ---------- Layout ---------- */
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(10, 15, 20, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(12px);
+}
+
+.mode-tab {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  transition: 0.2s ease;
+}
+
+.mode-tab i {
+  color: rgba(246, 200, 95, 0.58);
+  font-size: 11px;
+}
+
+.mode-tab small {
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(246, 200, 95, 0.24);
+  background: rgba(246, 200, 95, 0.09);
+  color: var(--gold);
+  font-family: var(--font-num);
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mode-tab:hover {
+  color: #e9e1d1;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mode-tab.is-active {
+  color: #281900;
+  background: linear-gradient(145deg, #ffe8a7, #e5ad43);
+  box-shadow:
+    0 5px 16px rgba(246, 200, 95, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.mode-tab.is-active i {
+  color: #3a2400;
+}
+
+.mode-tab.is-active small {
+  border-color: rgba(76, 46, 0, 0.24);
+  background: rgba(255, 255, 255, 0.22);
+  color: #382300;
+}
+
+.mode-tab small.is-pending {
+  border-color: rgba(94, 230, 164, 0.36);
+  background: rgba(94, 230, 164, 0.12);
+  color: #9cf2c5;
+}
+
+.mode-tab.is-active small.is-pending {
+  border-color: rgba(40, 107, 73, 0.35);
+  background: rgba(40, 107, 73, 0.14);
+  color: #14552f;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 372px;
@@ -1620,6 +1700,880 @@ button:disabled {
 
   .spin__text strong {
     font-size: 25px;
+  }
+}
+
+/* ---------- Scratch cards ---------- */
+.scratch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 352px;
+  gap: 22px;
+  align-items: start;
+}
+
+.scratch-left,
+.scratch-side {
+  min-width: 0;
+}
+
+.scratch-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.scratch-cabinet {
+  position: relative;
+  padding: 21px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(246, 200, 95, 0.22);
+  background:
+    radial-gradient(ellipse 60% 35% at 50% 0%, rgba(246, 200, 95, 0.09), transparent 70%),
+    linear-gradient(180deg, #12171d, #0a0e13 60%);
+  box-shadow:
+    var(--shadow-deep),
+    0 0 70px rgba(183, 123, 37, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.scratch-cabinet::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 40% 25% at 30% 0%, rgba(246, 200, 95, 0.06), transparent 70%),
+    linear-gradient(90deg, transparent 49.8%, rgba(255, 255, 255, 0.02) 50%, transparent 50.2%);
+}
+
+.scratch-cabinet__head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.scratch-cabinet__head h1 {
+  margin: 3px 0 4px;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  background: linear-gradient(180deg, #fff8df, #ffdf8b 45%, #c28b34);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.scratch-cabinet__head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.scratch-cabinet__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(246, 200, 95, 0.14);
+  background: rgba(246, 200, 95, 0.045);
+  color: #b5a681;
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.scratch-cabinet__hint i {
+  color: var(--gold);
+  font-size: 9px;
+}
+
+.ticket-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 13px;
+}
+
+.scratch-card {
+  --ticket-color: var(--gold);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  min-height: 150px;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--ticket-color) 13%, transparent), transparent 52%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.14));
+  color: var(--muted);
+  text-align: left;
+  overflow: hidden;
+  transition: 0.2s ease;
+}
+
+.scratch-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ticket-color) 36%, transparent);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+.scratch-card.is-busy {
+  border-color: color-mix(in srgb, var(--ticket-color) 55%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ticket-color) 22%, transparent),
+    0 0 24px color-mix(in srgb, var(--ticket-color) 9%, transparent);
+}
+
+.scratch-card:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.scratch-card.is-busy {
+  opacity: 1;
+}
+
+.scratch-card.is-unaffordable {
+  opacity: 0.58;
+}
+
+.scratch-card__glow {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  right: -30px;
+  top: -35px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ticket-color), transparent 68%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.scratch-card__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scratch-card__icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 26%, transparent);
+  background: color-mix(in srgb, var(--ticket-color) 9%, transparent);
+  color: var(--ticket-color);
+  font-size: 13px;
+}
+
+.scratch-card__title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scratch-card__title small {
+  color: var(--muted-2);
+  font-size: 7px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scratch-card__title strong {
+  color: #e7decc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.scratch-card__mult {
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 24%, transparent);
+  color: var(--ticket-color);
+  font-family: var(--font-num);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scratch-card__rule {
+  flex: 1;
+  color: var(--muted-2);
+  font-size: 8.8px;
+  line-height: 1.55;
+}
+
+.scratch-card__bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.scratch-card__price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ead8ab;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scratch-card__price i {
+  color: var(--gold);
+  font-size: 9px;
+}
+
+.scratch-card__max {
+  color: var(--muted-2);
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+.scratch-card__buy {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ticket-color);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.scratch-card__buy i {
+  font-size: 8px;
+  transition: transform 0.2s ease;
+}
+
+.scratch-card:hover:not(:disabled) .scratch-card__buy i {
+  transform: translateX(2px);
+}
+
+.scratch-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 470px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 45%, rgba(255, 255, 255, 0.03), transparent 70%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 12px),
+    rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.scratch-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 18px;
+  text-align: center;
+  color: var(--muted-2);
+}
+
+.scratch-empty__icon {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  border-radius: 20px;
+  border: 1px solid rgba(246, 200, 95, 0.16);
+  background:
+    radial-gradient(circle, rgba(246, 200, 95, 0.12), transparent 70%),
+    rgba(0, 0, 0, 0.2);
+  color: var(--gold);
+  font-size: 26px;
+  transform: rotate(-5deg);
+}
+
+.scratch-empty strong {
+  color: #d8cdb5;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.scratch-empty > span:last-child {
+  max-width: 320px;
+  font-size: 9.5px;
+  line-height: 1.6;
+}
+
+.scratch-ticket {
+  --ticket-color: var(--gold);
+  position: relative;
+  width: min(100%, 620px);
+  padding: 18px;
+  border-radius: 21px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 26%, transparent);
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, color-mix(in srgb, var(--ticket-color) 9%, transparent), transparent 72%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.035), transparent 35%),
+    linear-gradient(180deg, #151a20, #0b0f13);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.scratch-ticket::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 16px;
+  border: 1px dashed color-mix(in srgb, var(--ticket-color) 20%, transparent);
+  pointer-events: none;
+}
+
+.scratch-ticket__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.scratch-ticket__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ticket-color);
+  font-family: var(--font-num);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.scratch-ticket__brand i {
+  font-size: 10px;
+}
+
+.scratch-ticket__status {
+  padding: 4px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted-2);
+  font-size: 7.5px;
+  letter-spacing: 0.06em;
+}
+
+.scratch-ticket__status.is-revealed {
+  border-color: rgba(246, 200, 95, 0.24);
+  background: rgba(246, 200, 95, 0.07);
+  color: var(--gold-bright);
+}
+
+.scratch-ticket__title {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.scratch-ticket__title > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scratch-ticket__title span {
+  color: var(--muted-2);
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+}
+
+.scratch-ticket__title h2 {
+  margin: 0;
+  color: #efe5d0;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.scratch-ticket__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 20%, transparent);
+  background: color-mix(in srgb, var(--ticket-color) 7%, transparent);
+  white-space: nowrap;
+}
+
+.scratch-ticket__price span {
+  font-size: 7px;
+}
+
+.scratch-ticket__price strong {
+  color: var(--ticket-color);
+  font-family: var(--font-num);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.scratch-ticket__price small {
+  color: #bba979;
+  font-family: var(--font-num);
+  font-size: 8px;
+}
+
+.scratch-ticket__body {
+  position: relative;
+  padding: 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.scratch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.scratch-cell {
+  --symbol-color: var(--gold);
+  position: relative;
+  min-height: 83px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--symbol-color) 8%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.15));
+  overflow: hidden;
+  transition: 0.25s ease;
+}
+
+.scratch-cell i {
+  color: var(--symbol-color);
+  font-size: clamp(24px, 3vw, 35px);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--symbol-color) 35%, transparent);
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--symbol-color) 25%, transparent));
+}
+
+.scratch-cell span {
+  color: color-mix(in srgb, var(--symbol-color) 65%, #8b97a5);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+}
+
+.scratch-cell.is-win {
+  border-color: color-mix(in srgb, var(--symbol-color) 65%, transparent);
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--symbol-color) 20%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.1));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--symbol-color) 40%, transparent),
+    0 0 20px color-mix(in srgb, var(--symbol-color) 13%, transparent);
+}
+
+.scratch-cell--number {
+  min-height: 68px;
+}
+
+.scratch-cell--number span {
+  color: #f2e5c7;
+  font-family: var(--font-num);
+  font-size: clamp(23px, 3.2vw, 34px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.scratch-cell--number.is-win {
+  --symbol-color: var(--gold);
+}
+
+.lucky-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 20%, transparent);
+  background: color-mix(in srgb, var(--ticket-color) 5%, transparent);
+}
+
+.lucky-banner span {
+  color: var(--muted-2);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.lucky-banner strong {
+  color: var(--ticket-color);
+  font-family: var(--font-num);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.lucky-banner small {
+  margin-left: auto;
+  color: var(--muted-2);
+  font-size: 7.5px;
+}
+
+.scratch-area {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.scratch-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.scratch-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.scratch-ticket__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  color: var(--muted-2);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+}
+
+.scratch-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.16);
+  animation: scratchResultIn 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.scratch-result > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+}
+
+.scratch-result span {
+  color: var(--muted-2);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+.scratch-result strong {
+  color: #d7cab0;
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.scratch-result small {
+  color: var(--muted-2);
+  font-size: 8px;
+}
+
+.scratch-result.is-win {
+  border-color: rgba(246, 200, 95, 0.3);
+  background:
+    radial-gradient(ellipse 55% 150% at 0% 50%, rgba(246, 200, 95, 0.11), transparent 70%),
+    rgba(0, 0, 0, 0.13);
+  box-shadow: 0 0 22px rgba(246, 200, 95, 0.06);
+}
+
+.scratch-result.is-win span,
+.scratch-result.is-win small {
+  color: #c8b482;
+}
+
+.scratch-result.is-win strong {
+  color: var(--gold-bright);
+  text-shadow: 0 0 20px rgba(246, 200, 95, 0.25);
+}
+
+.scratch-result.is-loss {
+  border-color: rgba(255, 113, 133, 0.12);
+}
+
+.scratch-result.is-loss strong {
+  color: rgba(255, 113, 133, 0.65);
+}
+
+.scratch-result__ticket {
+  color: rgba(139, 151, 165, 0.5) !important;
+  font-family: var(--font-num);
+  font-size: 7px !important;
+  letter-spacing: 0.1em !important;
+  white-space: nowrap;
+}
+
+.scratch-controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.scratch-reveal {
+  min-width: 142px;
+}
+
+.scratch-reveal:disabled {
+  filter: saturate(0.35) brightness(0.68);
+  opacity: 0.65;
+  box-shadow: none;
+}
+
+.scratch-progress {
+  color: var(--muted-2);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scratch-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scratch-rule {
+  --ticket-color: var(--gold);
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 2px solid color-mix(in srgb, var(--ticket-color) 55%, transparent);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.scratch-rule__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.scratch-rule__head i {
+  color: var(--ticket-color);
+  font-size: 10px;
+}
+
+.scratch-rule__head strong {
+  color: #d9d0bd;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.scratch-rule__head span {
+  margin-left: auto;
+  color: var(--muted-2);
+  font-family: var(--font-num);
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+.scratch-rule p {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.scratch-net {
+  color: var(--muted-2);
+  font-family: var(--font-num);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.scratch-net.is-positive {
+  color: var(--green);
+}
+
+.scratch-net.is-negative {
+  color: var(--red);
+}
+
+.scratch-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 330px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.scratch-history__empty {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  color: var(--muted-2);
+  font-size: 8.5px;
+}
+
+.scratch-history__empty i {
+  color: rgba(246, 200, 95, 0.38);
+  font-size: 17px;
+}
+
+.scratch-history__item {
+  --ticket-color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-left: 2px solid color-mix(in srgb, var(--ticket-color) 40%, transparent);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.scratch-history__item.is-win {
+  background: linear-gradient(90deg, rgba(94, 230, 164, 0.035), transparent 70%);
+}
+
+.scratch-history__item.is-loss {
+  background: linear-gradient(90deg, rgba(255, 113, 133, 0.025), transparent 70%);
+}
+
+.scratch-history__icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ticket-color) 22%, transparent);
+  background: color-mix(in srgb, var(--ticket-color) 7%, transparent);
+  color: var(--ticket-color);
+  font-size: 11px;
+}
+
+.scratch-history__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scratch-history__body strong {
+  color: #d3caba;
+  font-size: 9.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scratch-history__body strong small {
+  color: var(--muted-2);
+  font-family: var(--font-num);
+  font-size: 7px;
+  font-weight: 400;
+}
+
+.scratch-history__body > span {
+  color: var(--muted-2);
+  font-size: 7.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scratch-history__net {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scratch-history__net.is-positive {
+  color: var(--green);
+}
+
+.scratch-history__net.is-negative {
+  color: var(--red);
+}
+
+@keyframes scratchResultIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -3243,6 +4197,16 @@ dialog::backdrop {
   .history-list {
     max-height: 330px;
   }
+
+  .scratch-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .scratch-side {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: start;
+  }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) {
@@ -3292,6 +4256,124 @@ dialog::backdrop {
 @media (max-width: 720px) {
   .app {
     padding-top: 17px;
+  }
+
+  .mode-switch {
+    display: flex;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .mode-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 0 10px;
+  }
+
+  .scratch-cabinet {
+    padding: 14px;
+  }
+
+  .scratch-cabinet__head {
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .scratch-cabinet__head h1 {
+    font-size: 28px;
+  }
+
+  .scratch-cabinet__hint {
+    display: none;
+  }
+
+  .ticket-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(258px, 78vw);
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .ticket-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scratch-card {
+    min-height: 145px;
+    scroll-snap-align: start;
+  }
+
+  .scratch-stage {
+    min-height: 0;
+    padding: 8px;
+    border-radius: 17px;
+  }
+
+  .scratch-ticket {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .scratch-ticket__title h2 {
+    font-size: 21px;
+  }
+
+  .scratch-ticket__price strong {
+    font-size: 15px;
+  }
+
+  .scratch-grid {
+    gap: 5px;
+  }
+
+  .scratch-cell {
+    min-height: 68px;
+    border-radius: 7px;
+  }
+
+  .scratch-cell i {
+    font-size: clamp(22px, 7vw, 32px);
+  }
+
+  .scratch-cell span {
+    font-size: 7px;
+  }
+
+  .scratch-cell--number {
+    min-height: 56px;
+  }
+
+  .scratch-cell--number span {
+    font-size: clamp(20px, 7vw, 29px);
+  }
+
+  .scratch-ticket__foot {
+    font-size: 6.8px;
+  }
+
+  .scratch-controls {
+    align-items: stretch;
+  }
+
+  .scratch-reveal {
+    flex: 1;
+    min-height: 40px;
+  }
+
+  .scratch-progress {
+    display: flex;
+    align-items: center;
+    font-size: 8px;
+  }
+
+  .scratch-side {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .layout {

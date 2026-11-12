@@ -2,7 +2,8 @@
   'use strict';
 
   const Engine = window.SlotEngine;
-  if (!Engine) {
+  const Scratch = window.ScratchEngine;
+  if (!Engine || !Scratch) {
     document.body.innerHTML = '<p style="padding:40px;color:#fff;font-family:sans-serif">游戏引擎加载失败，请刷新页面。</p>';
     return;
   }
@@ -28,6 +29,17 @@
    * ------------------------------------------------------------------ */
   const el = {
     brand: $('#brand'),
+    modeTabs: $$('.mode-tab'),
+    slotsView: $('#slotsView'),
+    scratchView: $('#scratchView'),
+    ticketGrid: $('#ticketGrid'),
+    scratchStage: $('#scratchStage'),
+    scratchRevealAll: $('#scratchRevealAll'),
+    scratchProgressText: $('#scratchProgressText'),
+    scratchRules: $('#scratchRules'),
+    scratchHistory: $('#scratchHistory'),
+    scratchNet: $('#scratchNet'),
+    scratchTabBadge: $('#scratchTabBadge'),
     coinBalance: $('#coinBalance'),
     soundToggle: $('#soundToggle'),
     helpBtn: $('#helpBtn'),
@@ -117,6 +129,21 @@
     hourlyReady: null
   };
 
+  const scratch = {
+    lastResult: null,
+    renderedTicketId: null,
+    renderedStageWidth: 0,
+    percent: 0,
+    canvas: null,
+    ctx: null,
+    cover: null,
+    drawing: false,
+    lastPoint: null,
+    lastCheck: 0,
+    finishing: false,
+    sampleCanvas: null
+  };
+
   let state = loadState();
 
   /* ------------------------------------------------------------------ *
@@ -145,6 +172,13 @@
         lossStreak: 0,
         totalTriggers: 0
       },
+      scratch: {
+        active: null,
+        history: [],
+        totalTickets: 0,
+        totalSpent: 0,
+        totalWon: 0
+      },
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -167,6 +201,7 @@
         stats: { ...fallback.stats, ...(parsed.stats || {}) },
         hourly: { ...fallback.hourly, ...(parsed.hourly || {}) },
         pity: { ...fallback.pity, ...(parsed.pity || {}) },
+        scratch: { ...fallback.scratch, ...(parsed.scratch || {}) },
         history: Array.isArray(parsed.history) ? parsed.history.slice(-Engine.MAX_HISTORY) : []
       };
 
@@ -183,6 +218,21 @@
       merged.hourly.totalClaimed = clampInteger(merged.hourly.totalClaimed, 0, 1e15, 0);
       merged.pity.lossStreak = clampInteger(merged.pity.lossStreak, 0, Engine.PITY_GUARANTEE, 0);
       merged.pity.totalTriggers = clampInteger(merged.pity.totalTriggers, 0, 1e12, 0);
+
+      merged.scratch.history = Array.isArray(merged.scratch.history)
+        ? merged.scratch.history.slice(-100)
+        : [];
+      merged.scratch.totalTickets = clampInteger(merged.scratch.totalTickets, 0, 1e12, 0);
+      merged.scratch.totalSpent = clampInteger(merged.scratch.totalSpent, 0, 1e15, 0);
+      merged.scratch.totalWon = clampInteger(merged.scratch.totalWon, 0, 1e15, 0);
+      if (
+        !merged.scratch.active ||
+        typeof merged.scratch.active !== 'object' ||
+        !Scratch.TICKET_BY_ID[merged.scratch.active.ticketId] ||
+        !Number.isFinite(Number(merged.scratch.active.win))
+      ) {
+        merged.scratch.active = null;
+      }
 
       if (merged.bet > merged.coins && merged.coins >= Engine.MIN_BET) {
         merged.bet = Math.max(Engine.MIN_BET, Math.min(merged.bet, Math.floor(merged.coins / 100) * 100 || Engine.MIN_BET));
@@ -291,6 +341,7 @@
       void el.coinBalance.offsetWidth;
       el.coinBalance.classList.add('bump');
     }
+    if (el.ticketGrid && el.ticketGrid.childElementCount) renderScratchCards();
   }
 
   function updateDevMeta() {
@@ -843,6 +894,591 @@
     el.resultDetail.textContent = '五条线都没能连成，下一转继续';
     el.resultAmount.textContent = `${SIGN} ${formatNumber(bet)}`;
     sound.lose();
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Scratch cards
+   * ------------------------------------------------------------------ */
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function switchMode(mode) {
+    const current = el.scratchView.hidden ? 'slots' : 'scratch';
+    if (mode === current) return;
+    if (mode === 'scratch' && ui.spinning) {
+      toast('本局还在结算，等卷轴停下来再切过去。');
+      return;
+    }
+
+    el.slotsView.hidden = mode !== 'slots';
+    el.scratchView.hidden = mode !== 'scratch';
+    el.modeTabs.forEach((tab) => {
+      const active = tab.dataset.mode === mode;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+
+    if (mode === 'scratch') renderScratch();
+    document.title = mode === 'scratch' ? 'DarkHell · 刮刮乐' : 'DarkHell · 五轴老虎机';
+    window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  }
+
+  function buildScratchCards() {
+    el.ticketGrid.innerHTML = '';
+    Scratch.TICKETS.forEach((ticket) => {
+      const card = element('button', 'scratch-card');
+      card.type = 'button';
+      card.dataset.ticket = ticket.id;
+      card.style.setProperty('--ticket-color', ticket.color);
+      card.setAttribute('aria-label', `购买${ticket.name}，票价 ${ticket.price} 金币，中奖倍率 ×${ticket.multiplier}`);
+
+      const glow = element('span', 'scratch-card__glow');
+      glow.setAttribute('aria-hidden', 'true');
+
+      const top = element('span', 'scratch-card__top');
+      const icon = element('span', 'scratch-card__icon');
+      const iconNode = element('i', `fa-solid ${ticket.icon}`);
+      iconNode.setAttribute('aria-hidden', 'true');
+      icon.append(iconNode);
+
+      const title = element('span', 'scratch-card__title');
+      title.append(
+        element('small', '', ticket.tagline),
+        element('strong', '', ticket.name)
+      );
+
+      const mult = element('span', 'scratch-card__mult', `×${multiplierFormatter.format(ticket.multiplier)}`);
+      top.append(icon, title, mult);
+
+      const rule = element('span', 'scratch-card__rule', ticket.rule);
+
+      const bottom = element('span', 'scratch-card__bottom');
+      const price = element('span', 'scratch-card__price');
+      const coin = element('i', 'fa-solid fa-coins');
+      coin.setAttribute('aria-hidden', 'true');
+      price.append(coin, document.createTextNode(` ${formatNumber(ticket.price)}`));
+      const max = element('span', 'scratch-card__max', `最高 ${ticket.maxPrize}×`);
+      const buy = element('span', 'scratch-card__buy');
+      buy.append(document.createTextNode('购买 '));
+      const arrow = element('i', 'fa-solid fa-arrow-right');
+      arrow.setAttribute('aria-hidden', 'true');
+      buy.append(arrow);
+      bottom.append(price, max, buy);
+
+      card.append(glow, top, rule, bottom);
+      card.addEventListener('click', () => buyScratchTicket(ticket.id));
+      el.ticketGrid.append(card);
+    });
+  }
+
+  function renderScratchCards() {
+    const activeId = state.scratch.active ? state.scratch.active.ticketId : null;
+    if (el.scratchTabBadge) {
+      el.scratchTabBadge.textContent = state.scratch.active ? '待开' : 'NEW';
+      el.scratchTabBadge.classList.toggle('is-pending', Boolean(state.scratch.active));
+    }
+    Array.from(el.ticketGrid.children).forEach((card) => {
+      const ticket = Scratch.TICKET_BY_ID[card.dataset.ticket];
+      if (!ticket) return;
+      const locked = Boolean(state.scratch.active);
+      card.disabled = locked;
+      card.classList.toggle('is-busy', locked && activeId === ticket.id);
+      card.classList.toggle('is-unaffordable', !locked && state.coins < ticket.price);
+      card.classList.toggle('is-active', activeId === ticket.id);
+
+      const buy = card.querySelector('.scratch-card__buy');
+      if (buy && buy.firstChild) {
+        buy.firstChild.nodeValue = locked ? (activeId === ticket.id ? '刮票中 ' : '等待 ') : '购买 ';
+      }
+    });
+  }
+
+  function buildScratchRules() {
+    el.scratchRules.innerHTML = '';
+    Scratch.TICKETS.forEach((ticket) => {
+      const item = element('article', 'scratch-rule');
+      item.style.setProperty('--ticket-color', ticket.color);
+
+      const head = element('div', 'scratch-rule__head');
+      const icon = element('i', `fa-solid ${ticket.icon}`);
+      icon.setAttribute('aria-hidden', 'true');
+      const name = element('strong', '', ticket.name);
+      const price = element('span', '', `${formatNumber(ticket.price)} 金币 · ×${multiplierFormatter.format(ticket.multiplier)}`);
+      head.append(icon, name, price);
+
+      const text = element('p', '', ticket.rule);
+      item.append(head, text);
+      el.scratchRules.append(item);
+    });
+  }
+
+  function renderScratchHistory() {
+    const totals = state.scratch;
+    const net = totals.totalWon - totals.totalSpent;
+    el.scratchNet.textContent = `盈亏 ${formatNet(net)}`;
+    el.scratchNet.classList.toggle('is-positive', net > 0);
+    el.scratchNet.classList.toggle('is-negative', net < 0);
+
+    el.scratchHistory.innerHTML = '';
+    if (!state.scratch.history.length) {
+      const empty = element('div', 'scratch-history__empty');
+      const icon = element('i', 'fa-solid fa-ticket');
+      icon.setAttribute('aria-hidden', 'true');
+      empty.append(icon, element('span', '', '还没有刮过票'));
+      el.scratchHistory.append(empty);
+      return;
+    }
+
+    state.scratch.history
+      .slice(-7)
+      .reverse()
+      .forEach((entry) => {
+        const ticket = Scratch.TICKET_BY_ID[entry.ticketId] || Scratch.TICKETS[0];
+        const item = element('article', `scratch-history__item ${entry.net > 0 ? 'is-win' : 'is-loss'}`);
+        item.style.setProperty('--ticket-color', ticket.color);
+
+        const iconWrap = element('span', 'scratch-history__icon');
+        const icon = element('i', `fa-solid ${ticket.icon}`);
+        icon.setAttribute('aria-hidden', 'true');
+        iconWrap.append(icon);
+
+        const body = element('div', 'scratch-history__body');
+        const title = element('strong', '', entry.name || ticket.name);
+        title.append(document.createTextNode(` `), element('small', '', ` ${formatNumber(entry.price)} ×${multiplierFormatter.format(entry.multiplier)}`));
+        const autoLabel = entry.auto ? ' · 自动开票' : '';
+        const sub = element('span', '', `${entry.outcomeLabel || '已开票'}${autoLabel} · ${formatHistoryTime(entry.t)}`);
+        body.append(title, sub);
+
+        const amount = element(
+          'b',
+          `scratch-history__net ${entry.net > 0 ? 'is-positive' : entry.net < 0 ? 'is-negative' : ''}`,
+          formatNet(entry.net)
+        );
+        item.append(iconWrap, body, amount);
+        el.scratchHistory.append(item);
+      });
+  }
+
+  function renderScratchPlaceholder() {
+    el.scratchStage.innerHTML = '';
+    const empty = element('div', 'scratch-empty');
+    const iconWrap = element('span', 'scratch-empty__icon');
+    const icon = element('i', 'fa-solid fa-ticket');
+    icon.setAttribute('aria-hidden', 'true');
+    iconWrap.append(icon);
+    empty.append(
+      iconWrap,
+      element('strong', '', '选一张刮票开始'),
+      element('span', '', '三种票、三种规则。刮开 80% 自动开票，也可以一键刮开。')
+    );
+    el.scratchStage.append(empty);
+  }
+
+  function renderScratch() {
+    renderScratchCards();
+    renderScratchHistory();
+
+    const active = state.scratch.active;
+    const visible = !el.scratchView.hidden;
+
+    if (active) {
+      el.scratchRevealAll.disabled = false;
+      const stageWidth = visible ? el.scratchStage.clientWidth : 0;
+      const sizeChanged = visible && Math.abs(stageWidth - scratch.renderedStageWidth) > 2;
+      if (visible && (scratch.renderedTicketId !== active.id || sizeChanged)) {
+        buildScratchStage(active, false);
+        scratch.renderedTicketId = active.id;
+        scratch.renderedStageWidth = stageWidth;
+        scratch.percent = 0;
+        setScratchProgress(0);
+      } else if (visible) {
+        setScratchProgress(scratch.percent);
+      } else {
+        el.scratchProgressText.textContent = '当前有一张未开票的刮票';
+      }
+      return;
+    }
+
+    el.scratchRevealAll.disabled = true;
+    scratch.renderedTicketId = null;
+
+    if (scratch.lastResult) {
+      if (visible) buildScratchStage(scratch.lastResult, true);
+      el.scratchProgressText.textContent =
+        scratch.lastResult.win > 0
+          ? `已开票：+${formatNumber(scratch.lastResult.win)} 金币`
+          : '已开票：这张没有中奖';
+      return;
+    }
+
+    if (visible) renderScratchPlaceholder();
+    el.scratchProgressText.textContent = '选择一张刮票开始';
+  }
+
+  function createScratchTicket(ticket, revealed) {
+    const card = element('article', `scratch-ticket scratch-ticket--${ticket.ticketId}`);
+    card.style.setProperty('--ticket-color', ticket.color);
+
+    const head = element('div', 'scratch-ticket__head');
+    const brand = element('div', 'scratch-ticket__brand');
+    const brandIcon = element('i', `fa-solid ${ticket.icon}`);
+    brandIcon.setAttribute('aria-hidden', 'true');
+    brand.append(brandIcon, element('span', '', 'DARKHELL SCRATCH'));
+    const status = element('span', `scratch-ticket__status ${revealed ? 'is-revealed' : ''}`, revealed ? '已开票' : '待刮开');
+    head.append(brand, status);
+
+    const titleRow = element('div', 'scratch-ticket__title');
+    const titleCopy = element('div', '');
+    titleCopy.append(
+      element('span', '', ticket.tagline),
+      element('h2', '', ticket.name)
+    );
+    const price = element('div', 'scratch-ticket__price');
+    price.append(
+      element('span', '', '票价'),
+      element('strong', '', formatNumber(ticket.price)),
+      element('small', '', `×${multiplierFormatter.format(ticket.multiplier)}`)
+    );
+    titleRow.append(titleCopy, price);
+
+    const body = element('div', 'scratch-ticket__body');
+    const area = element('div', 'scratch-area');
+    let revealedWinning = new Set();
+    if (revealed) {
+      if (ticket.data.lines) {
+        ticket.data.lines.forEach((line) => line.cells.forEach((index) => revealedWinning.add(index)));
+      }
+      if (ticket.data.crownIndices) {
+        ticket.data.crownIndices.forEach((index) => revealedWinning.add(index));
+      }
+    }
+
+    if (ticket.ticketId === 'lucky') {
+      const lucky = element('div', 'lucky-banner');
+      const luckyLabel = element('span', '', '中奖号码');
+      const luckyNumber = element('strong', '', String(ticket.data.luckyNumber).padStart(2, '0'));
+      const luckyHint = element('small', '', '刮出相同数字即中奖');
+      lucky.append(luckyLabel, luckyNumber, luckyHint);
+      body.append(lucky);
+    }
+
+    if (ticket.ticketId === 'lucky') {
+      const grid = element('div', 'scratch-grid scratch-grid--numbers');
+      ticket.data.numbers.forEach((number, index) => {
+        const cell = element('div', 'scratch-cell scratch-cell--number');
+        if (revealed && ticket.data.winningIndices.includes(index)) cell.classList.add('is-win');
+        cell.append(element('span', '', String(number).padStart(2, '0')));
+        grid.append(cell);
+      });
+      area.append(grid);
+    } else {
+      const grid = element('div', 'scratch-grid');
+      ticket.data.cells.forEach((symbolId, index) => {
+        const symbol = Scratch.SYMBOL_BY_ID[symbolId] || Scratch.SYMBOLS[0];
+        const cell = element('div', 'scratch-cell');
+        cell.style.setProperty('--symbol-color', symbol.color);
+        if (revealed && revealedWinning.has(index)) cell.classList.add('is-win');
+        const icon = element('i', `fa-solid ${symbol.icon}`);
+        icon.setAttribute('aria-hidden', 'true');
+        cell.append(icon, element('span', '', symbol.name));
+        grid.append(cell);
+      });
+      area.append(grid);
+    }
+
+    if (!revealed) {
+      const cover = element('div', 'scratch-cover');
+      const canvas = element('canvas', 'scratch-canvas');
+      cover.append(canvas);
+      area.append(cover);
+      body.append(area);
+      card.append(head, titleRow, body);
+      const activeFoot = element('div', 'scratch-ticket__foot');
+      activeFoot.append(
+        element('span', '', 'DARKHELL · 娱乐刮票'),
+        element('span', '', '刮开 80% 自动开票')
+      );
+      card.append(activeFoot);
+      return { card, canvas, area };
+    }
+
+    body.append(area);
+    card.append(head, titleRow, body);
+
+    const banner = element('div', `scratch-result ${ticket.win > 0 ? 'is-win' : 'is-loss'}`);
+    const bannerCopy = element('div', '');
+    bannerCopy.append(
+      element('span', '', ticket.win > 0 ? '中奖' : '开票结果'),
+      element('strong', '', ticket.win > 0 ? `+${formatNumber(ticket.win)}` : '未中奖'),
+      element('small', '', ticket.win > 0 ? ticket.outcomeLabel || '' : '谢谢参与，再试一张')
+    );
+    const ticketCode = String(ticket.id || '').replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase();
+    const ticketNumber = element('span', 'scratch-result__ticket', `票号 ${ticketCode || '------'}`);
+    banner.append(bannerCopy, ticketNumber);
+    card.append(banner);
+
+    const foot = element('div', 'scratch-ticket__foot');
+    foot.append(
+      element('span', '', 'DARKHELL · 娱乐刮票'),
+      element('span', '', '刮开 80% 自动开票')
+    );
+    card.append(foot);
+    return { card, canvas: null, area: null };
+  }
+
+  function buildScratchStage(ticket, revealed) {
+    el.scratchStage.innerHTML = '';
+    const built = createScratchTicket(ticket, revealed);
+    el.scratchStage.append(built.card);
+    if (!revealed && built.canvas) {
+      setupScratchCanvas(built.canvas, built.area);
+    }
+  }
+
+  function drawScratchFoil(ctx, width, height) {
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#585b60');
+    gradient.addColorStop(0.32, '#8e9094');
+    gradient.addColorStop(0.55, '#44474c');
+    gradient.addColorStop(1, '#292c31');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    for (let offset = -height; offset < width + height; offset += 18) {
+      ctx.beginPath();
+      ctx.moveTo(offset, 0);
+      ctx.lineTo(offset + height, height);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(246, 200, 95, 0.3)';
+    ctx.font = '700 11px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('DARKHELL SCRATCH', width / 2, height / 2 - 15);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.48)';
+    ctx.font = '700 22px "Microsoft YaHei", sans-serif';
+    ctx.fillText('刮开涂层', width / 2, height / 2 + 15);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.font = '600 9px "Microsoft YaHei", sans-serif';
+    ctx.fillText('SCRATCH TO REVEAL', width / 2, height / 2 + 35);
+
+    for (let index = 0; index < 36; index += 1) {
+      const x = (index * 97) % width;
+      const y = (index * 61) % height;
+      ctx.fillStyle = index % 3 === 0 ? 'rgba(246, 200, 95, 0.2)' : 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.arc(x, y, index % 3 === 0 ? 1.6 : 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function setScratchProgress(percent) {
+    scratch.percent = Math.max(0, Math.min(1, percent));
+    if (!state.scratch.active) return;
+    const rounded = Math.min(100, Math.floor(scratch.percent * 100));
+    el.scratchProgressText.textContent = `已刮开 ${rounded}% · 刮开 80% 自动开票`;
+  }
+
+  function sampleScratch() {
+    if (!scratch.canvas || !scratch.ctx || scratch.finishing || !state.scratch.active) return;
+    const width = 120;
+    const height = 80;
+    if (!scratch.sampleCanvas) {
+      scratch.sampleCanvas = document.createElement('canvas');
+      scratch.sampleCanvas.width = width;
+      scratch.sampleCanvas.height = height;
+    }
+    const sampleCtx = scratch.sampleCanvas.getContext('2d', { willReadFrequently: true });
+    sampleCtx.clearRect(0, 0, width, height);
+    sampleCtx.drawImage(scratch.canvas, 0, 0, width, height);
+    const pixels = sampleCtx.getImageData(0, 0, width, height).data;
+    let cleared = 0;
+    for (let index = 3; index < pixels.length; index += 4) {
+      if (pixels[index] < 128) cleared += 1;
+    }
+    const percent = cleared / (width * height);
+    setScratchProgress(percent);
+    if (percent >= 0.8) finalizeScratch(true);
+  }
+
+  function setupScratchCanvas(canvas, area) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = area.getBoundingClientRect();
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawScratchFoil(ctx, width, height);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    scratch.canvas = canvas;
+    scratch.ctx = ctx;
+    scratch.cover = canvas.parentElement;
+    scratch.drawing = false;
+    scratch.lastPoint = null;
+    scratch.finishing = false;
+    scratch.percent = 0;
+    let lastSample = 0;
+    const brush = Math.max(18, Math.min(32, width * 0.035));
+
+    const pointFromEvent = (event) => {
+      const bounds = canvas.getBoundingClientRect();
+      return {
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top
+      };
+    };
+
+    const scratchAt = (point, previous) => {
+      if (!scratch.ctx) return;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = brush * 2;
+      ctx.beginPath();
+      if (previous) {
+        ctx.moveTo(previous.x, previous.y);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+      } else {
+        ctx.arc(point.x, point.y, brush, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+
+    canvas.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      event.preventDefault();
+      if (scratch.finishing) return;
+      scratch.drawing = true;
+      scratch.lastPoint = pointFromEvent(event);
+      scratchAt(scratch.lastPoint, null);
+      if (canvas.setPointerCapture) {
+        try {
+          canvas.setPointerCapture(event.pointerId);
+        } catch (error) {
+          /* pointer capture is optional */
+        }
+      }
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+      if (!scratch.drawing || scratch.finishing) return;
+      event.preventDefault();
+      const point = pointFromEvent(event);
+      scratchAt(point, scratch.lastPoint);
+      scratch.lastPoint = point;
+      const now = performance.now();
+      if (now - lastSample > 140) {
+        lastSample = now;
+        sampleScratch();
+      }
+    });
+
+    const finishPointer = () => {
+      if (!scratch.drawing) return;
+      scratch.drawing = false;
+      scratch.lastPoint = null;
+      sampleScratch();
+    };
+    canvas.addEventListener('pointerup', finishPointer);
+    canvas.addEventListener('pointercancel', finishPointer);
+
+    setScratchProgress(0);
+  }
+
+  function buyScratchTicket(ticketId) {
+    const ticket = Scratch.TICKET_BY_ID[ticketId];
+    if (!ticket) return;
+    if (state.scratch.active) {
+      toast('先把当前这张刮完，再买下一张。');
+      return;
+    }
+    if (state.coins < ticket.price) {
+      toast(`金币不足，${ticket.name}需要 ${formatNumber(ticket.price)} 金币。`, { type: 'error' });
+      return;
+    }
+
+    const purchased = Scratch.purchase(ticketId);
+    purchased.id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    state.coins -= ticket.price;
+    state.scratch.active = purchased;
+    scratch.lastResult = null;
+    scratch.renderedTicketId = null;
+    scratch.percent = 0;
+    scratch.finishing = false;
+    persist();
+    updateBalance();
+    renderScratch();
+    sound.click();
+    toast(`已购买「${ticket.name}」，开始刮吧。`, { duration: 1800 });
+    el.scratchStage.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
+  }
+
+  function finalizeScratch(auto = false) {
+    if (scratch.finishing || !state.scratch.active) return;
+    scratch.finishing = true;
+    const ticket = state.scratch.active;
+    setScratchProgress(1);
+
+    state.coins = Math.min(MAX_COINS, state.coins + ticket.win);
+    state.scratch.active = null;
+    state.scratch.totalTickets += 1;
+    state.scratch.totalSpent += ticket.price;
+    state.scratch.totalWon += ticket.win;
+    const record = {
+      id: ticket.id,
+      t: Date.now(),
+      purchasedAt: ticket.purchasedAt,
+      ticketId: ticket.ticketId,
+      name: ticket.name,
+      price: ticket.price,
+      multiplier: ticket.multiplier,
+      win: ticket.win,
+      net: ticket.win - ticket.price,
+      outcomeLabel: ticket.outcomeLabel,
+      auto: Boolean(auto)
+    };
+    state.scratch.history.push(record);
+    if (state.scratch.history.length > 100) state.scratch.history = state.scratch.history.slice(-100);
+
+    scratch.lastResult = ticket;
+    scratch.renderedTicketId = null;
+    scratch.canvas = null;
+    scratch.ctx = null;
+    scratch.cover = null;
+    scratch.drawing = false;
+    scratch.sampleCanvas = null;
+    scratch.finishing = false;
+
+    persist();
+    updateBalance(ticket.win > 0);
+    renderScratch();
+
+    if (ticket.win > 0) {
+      sound.win(1);
+      toast(`刮票中奖：+${formatNumber(ticket.win)} 金币${auto ? '（80% 自动开票）' : ''}`, {
+        type: 'success',
+        duration: 3000
+      });
+    } else {
+      sound.lose();
+      toast(`这张没有中奖${auto ? '（80% 自动开票）' : ''}，再试一张。`, { duration: 2400 });
+    }
   }
 
   /* ------------------------------------------------------------------ *
@@ -1481,7 +2117,7 @@
     }
     const confirmed = await askConfirm(
       '重置全部存档？',
-      '金币、累计统计、历史记录和下注设置都会回到初始状态。此操作无法撤销。',
+      '金币、老虎机记录、刮刮乐记录、保底进度和下注设置都会回到初始状态。此操作无法撤销。',
       { okLabel: '全部重置' }
     );
     if (!confirmed) return;
@@ -1495,10 +2131,17 @@
     ui.force = null;
     el.devForce.value = '';
     ui.version += 1;
+    scratch.lastResult = null;
+    scratch.renderedTicketId = null;
+    scratch.percent = 0;
+    scratch.canvas = null;
+    scratch.ctx = null;
+    scratch.drawing = false;
     clearBoardVisuals();
     paintInitialGrid();
     persist();
     renderAll();
+    renderScratch();
     renderFullHistory(true);
     el.resultBar.classList.remove('is-win', 'is-loss', 'is-spinning');
     el.resultIcon.className = 'fa-solid fa-clover';
@@ -1518,6 +2161,7 @@
       stats: state.stats,
       hourly: state.hourly,
       pity: state.pity,
+      scratch: state.scratch,
       history: state.history
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1612,6 +2256,10 @@
    * Event wiring
    * ------------------------------------------------------------------ */
   function bindEvents() {
+    el.modeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+    });
+    el.scratchRevealAll.addEventListener('click', () => finalizeScratch(false));
     el.spinBtn.addEventListener('click', spin);
     el.betPresets.addEventListener('click', (event) => {
       const chip = event.target.closest('.bet-chip');
@@ -1648,8 +2296,18 @@
       }
     });
 
-    el.helpBtn.addEventListener('click', () => openDialog(el.helpDialog));
+    el.helpBtn.addEventListener('click', () => {
+      if (!el.scratchView.hidden) {
+        el.scratchRules.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
+        return;
+      }
+      openDialog(el.helpDialog);
+    });
     el.historyBtn.addEventListener('click', () => {
+      if (!el.scratchView.hidden) {
+        el.scratchHistory.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
+        return;
+      }
       renderFullHistory(true);
       openDialog(el.historyDialog);
     });
@@ -1734,6 +2392,13 @@
         window.clearTimeout(ui.resizeTimer);
         ui.resizeTimer = window.setTimeout(() => drawWinLines(ui.lastWins, false), 100);
       }
+      if (!el.scratchView.hidden && state.scratch.active) {
+        window.clearTimeout(scratch.resizeTimer);
+        scratch.resizeTimer = window.setTimeout(() => {
+          scratch.renderedTicketId = null;
+          renderScratch();
+        }, 160);
+      }
     });
 
     document.addEventListener('keydown', (event) => {
@@ -1741,6 +2406,7 @@
       const tag = (document.activeElement && document.activeElement.tagName) || '';
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tag)) return;
       if ($$('dialog').some((dialog) => dialog.open)) return;
+      if (!el.scratchView.hidden) return;
       event.preventDefault();
       spin();
     });
@@ -1758,9 +2424,12 @@
    * ------------------------------------------------------------------ */
   buildReels();
   buildPaytable();
+  buildScratchCards();
+  buildScratchRules();
   bindEvents();
   paintInitialGrid();
   renderAll();
+  renderScratch();
   if (ui.firstRun) persist();
   window.setInterval(() => {
     const wasReady = ui.hourlyReady;
